@@ -164,7 +164,6 @@
   <section class="pitchwrap hidden" id="match">
     <canvas id="pitch" width="520" height="640"></canvas>
     <div class="tag">Tahminin: <b id="predTag">1 - 1</b></div>
-    <div class="hint" id="hint">👆 Topa dokun ve sürükle: vur!</div>
     <div class="overlay" id="goalflash"><div>GOOOL!</div></div>
     <div class="scoreboard">
       <div class="sb-team"><div class="mini"><img id="sbHomeImg" alt=""></div><span id="sbHome"></span></div>
@@ -315,7 +314,6 @@ const BADGE_DEFS = [
 const COMMENTS = {
   chance:["{t} tehlikeli geliyor!","{t} ceza sahasına giriyor...","{t} korner kullanıyor.","{t} uzaktan şut! Kaleci çeldi.","Direk! {t} çok yaklaştı.","{t} ofsayta takıldı.","{t} kontra atağa çıkıyor!"],
   goal:["GOOOL! {t} skoru değiştiriyor!","{t} ağları havalandırdı!","Muhteşem bir vuruş, {t}!","{t} için harika bir gol!"],
-  user:["Tribünden gelen top! Oyun devam ediyor.","Seyirci topa müdahale etti, hakem devam dedi!","Top tribüne gitti geldi, kimse anlamadı."],
 };
 
 let league=LEAGUES[0], teams=[], pred={h:1,a:1}, home, away, speed=1, raf=null, game=null;
@@ -381,7 +379,6 @@ async function startMatch(){
   $("sbHome").textContent=home.n; $("sbAway").textContent=away.n;
   $("sbHomeImg").src=home.logo; $("sbAwayImg").src=away.logo;
   $("comm").innerHTML=""; $("sh").textContent=0; $("sa").textContent=0; $("minute").textContent="00'";
-  $("hint").style.display="";
 
   const [hc,ac]=await Promise.all([logoColor(home),logoColor(away)]);
   home.col=hc; away.col=ac;
@@ -398,8 +395,9 @@ async function startMatch(){
   players.forEach(p=>{p.x=p.hx;p.y=p.hy});
 
   game={min:0,sh:0,sa:0,events,skip:false,done:false,lastT:performance.now(),acc:0,
-        ball:{x:W/2,y:H/2,vx:0,vy:0}, players, shoot:null, drag:null, userKicks:0, possession:Math.random()<0.5?"h":"a"};
-  comment(0,"Maç başladı! Top senin de: dokun, sürükle, vur.");
+        ball:{x:W/2,y:H/2,vx:0,vy:0}, players, shoot:null, idle:0, possession:Math.random()<0.5?"h":"a"};
+  comment(0,"Maç başladı!");
+  kickToward(game.possession,0.6);
   cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
 }
 function comment(min,text,cls){
@@ -423,7 +421,7 @@ function loop(now){
         if(e.team==="h") game.sh++; else game.sa++;
         $("sh").textContent=game.sh; $("sa").textContent=game.sa;
         comment(game.min,pick(COMMENTS.goal).replace("{t}",t.n),"goal");
-        game.shoot={team:e.team,t:0}; game.drag=null;
+        game.shoot={team:e.team,t:0};
         if(!game.skip) flash($("goalflash"),"GOOOL!");
       } else { comment(game.min,pick(COMMENTS.chance).replace("{t}",t.n)); game.possession=e.team; kickToward(e.team,1.0); }
     }
@@ -450,11 +448,13 @@ function stepPhysics(k){
     if(game.shoot.t>1){ game.shoot=null; b.x=W/2; b.y=H/2; game.possession=game.shoot?.team==="h"?"a":"h"; }
     return;
   }
-  if(game.drag) { b.vx=b.vy=0; return; } // held by user
   // move
   b.x+=b.vx*k; b.y+=b.vy*k;
   const fr=Math.pow(0.985,k); b.vx*=fr; b.vy*=fr;
-  if(Math.hypot(b.vx,b.vy)<0.05){ b.vx=b.vy=0; }
+  if(Math.hypot(b.vx,b.vy)<0.3){ // ball stopped: someone picks it up and plays it somewhere random
+    game.idle+=k;
+    if(game.idle>12){ game.idle=0; const a=Math.random()*Math.PI*2, sp=2+Math.random()*5; b.vx=Math.cos(a)*sp; b.vy=Math.sin(a)*sp; }
+  } else game.idle=0;
   // bounds / goals (user or AI shots that land in the net don't count, ball just resets)
   const inGoalMouth=Math.abs(b.x-W/2)<GOAL_W/2;
   if(b.y<P.y){ if(inGoalMouth && b.y<P.y-14){ nearMiss(); } else if(!inGoalMouth){ b.y=P.y; b.vy=-b.vy*0.6; } }
@@ -478,17 +478,6 @@ function nearMiss(){
   const b=game.ball; b.x=W/2; b.y=H/2; b.vx=b.vy=0;
   if(!game.skip){ flash($("goalflash"),"DİREK! 🙈"); comment(game.min,"Top kaleye girer gibi oldu ama hakem gol vermedi, iptal!"); }
 }
-// user drag-to-kick
-let ptr=null;
-function cvPos(e){ const r=cv.getBoundingClientRect(); const s=W/r.width; return {x:(e.clientX-r.left)*s,y:(e.clientY-r.top)*s}; }
-cv.addEventListener("pointerdown",e=>{ if(!game||game.done||game.shoot) return; const p=cvPos(e); const b=game.ball;
-  if(Math.hypot(p.x-b.x,p.y-b.y)<40){ game.drag={sx:p.x,sy:p.y,x:p.x,y:p.y}; cv.setPointerCapture(e.pointerId); $("hint").style.display="none"; } });
-cv.addEventListener("pointermove",e=>{ if(game&&game.drag){ const p=cvPos(e); game.drag.x=p.x; game.drag.y=p.y; } });
-cv.addEventListener("pointerup",e=>{ if(!game||!game.drag) return; const d=game.drag; game.drag=null;
-  const dx=d.sx-d.x, dy=d.sy-d.y, len=Math.hypot(dx,dy); if(len<8) return;
-  const sp=Math.min(14,len/8); game.ball.vx=dx/len*sp; game.ball.vy=dy/len*sp; game.userKicks++;
-  if(game.userKicks===1) comment(game.min,pick(COMMENTS.user),"user"); });
-
 function draw(){
   for(let i=0;i<10;i++){ ctx.fillStyle=i%2?"#2f9e44":"#37b24d"; ctx.fillRect(0,i*H/10,W,H/10); }
   ctx.strokeStyle="rgba(255,255,255,.9)"; ctx.lineWidth=3;
@@ -508,10 +497,7 @@ function draw(){
   });
   game.players.forEach(p=>{ const t=p.team==="h"?home:away;
     ctx.beginPath(); ctx.arc(p.x,p.y,8,0,Math.PI*2); ctx.fillStyle=t.col||t.c; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle="#fff"; ctx.stroke(); });
-  // drag aim line
-  const b=game.ball;
-  if(game.drag){ const d=game.drag; ctx.setLineDash([6,6]); ctx.strokeStyle="rgba(255,214,10,.9)"; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.lineTo(b.x+(d.sx-d.x)*1.5,b.y+(d.sy-d.y)*1.5); ctx.stroke(); ctx.setLineDash([]); }
-  drawBall(ctx,b.x,b.y,11);
+  drawBall(ctx,game.ball.x,game.ball.y,11);
 }
 function drawBall(c,x,y,r){
   c.save(); c.shadowColor="rgba(0,0,0,.5)"; c.shadowBlur=8; c.shadowOffsetY=4;
