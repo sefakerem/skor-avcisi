@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Skor Avcısı — Maç Skoru Tahmin Oyunu</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#131c2e; --panel2:#1b2740; --line:#2a3a5c;
+    --text:#eef3ff; --muted:#93a2c4; --accent:#ffd60a; --good:#3ddc84; --bad:#ff5c5c;
+    --grass1:#2f9e44; --grass2:#37b24d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    background:radial-gradient(1200px 600px at 50% -10%,#1d2b4d 0%,var(--bg) 60%);
+    color:var(--text); min-height:100vh; display:flex; justify-content:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{width:100%;max-width:520px;padding:16px 14px 32px;display:flex;flex-direction:column;gap:14px}
+  .app>*{flex-shrink:0}
+
+  header{display:flex;align-items:center;justify-content:space-between}
+  .logo{font-weight:900;font-size:22px;letter-spacing:.5px}
+  .logo span{color:var(--accent)}
+  .profile{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+  .lvl{background:var(--panel2);border:1px solid var(--line);padding:6px 10px;border-radius:999px;font-weight:700;color:var(--text)}
+  .xpbar{width:90px;height:6px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#ff9f1c);width:0%;transition:width .4s}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .card h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+
+  .teams{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+  .teamsel{display:flex;flex-direction:column;gap:8px;align-items:center}
+  .badge{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:18px;border:3px solid #fff2;box-shadow:0 6px 16px rgba(0,0,0,.4);transition:transform .2s}
+  .badge:hover{transform:scale(1.06)}
+  select{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:13px;width:100%;max-width:160px}
+  .vs{font-weight:900;color:var(--accent);font-size:18px}
+  .strength{font-size:11px;color:var(--muted)}
+
+  .predict{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-top:6px}
+  .stepper{display:flex;align-items:center;justify-content:center;gap:10px}
+  .stepper button{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:20px;font-weight:700;cursor:pointer}
+  .stepper button:active{transform:scale(.95)}
+  .stepper .num{font-size:34px;font-weight:900;min-width:40px;text-align:center}
+
+  .btn{width:100%;padding:14px;border:none;border-radius:14px;font-weight:900;font-size:16px;cursor:pointer;background:linear-gradient(90deg,var(--accent),#ff9f1c);color:#1a1200;box-shadow:0 8px 20px rgba(255,214,10,.25);transition:transform .1s,opacity .2s}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.secondary{background:var(--panel2);color:var(--text);box-shadow:none;border:1px solid var(--line)}
+
+  /* pitch */
+  .pitchwrap{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  canvas{display:block;width:100%;height:auto;background:var(--grass1)}
+  .scoreboard{background:#080e1c;padding:12px 14px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+  .sb-team{display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:800;font-size:13px}
+  .sb-team .mini{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:900;border:2px solid #fff3}
+  .sb-score{font-size:42px;font-weight:900;letter-spacing:4px;text-align:center;line-height:1}
+  .sb-min{font-size:13px;color:var(--accent);font-weight:800;text-align:center;margin-top:4px;font-variant-numeric:tabular-nums}
+  .goalflash{position:absolute;inset:0;display:none;place-items:center;background:rgba(255,214,10,.15);backdrop-filter:blur(2px);animation:flash .9s ease-out}
+  .goalflash.on{display:grid}
+  .goalflash div{font-size:56px;font-weight:900;color:#fff;text-shadow:0 0 30px var(--accent),0 4px 0 #000;transform:rotate(-6deg);letter-spacing:4px}
+  @keyframes flash{0%{opacity:0;transform:scale(.6)}30%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
+  .pred-tag{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(8,14,28,.8);border:1px solid var(--line);padding:5px 12px;border-radius:999px;font-size:12px;color:var(--muted)}
+  .pred-tag b{color:var(--accent)}
+
+  .controls{display:flex;gap:8px}
+  .controls button{flex:1;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-weight:700;cursor:pointer}
+  .controls button.active{background:var(--accent);color:#1a1200;border-color:var(--accent)}
+
+  .commentary{height:92px;overflow-y:auto;font-size:13px;display:flex;flex-direction:column;gap:5px;scroll-behavior:smooth}
+  .commentary div{padding:6px 10px;background:var(--panel2);border-radius:10px;border-left:3px solid var(--line)}
+  .commentary div.goal{border-left-color:var(--accent);background:#2a2a14}
+  .commentary div .m{color:var(--accent);font-weight:800;margin-right:6px;font-variant-numeric:tabular-nums}
+
+  /* result */
+  .result{text-align:center;display:none;flex-direction:column;gap:10px}
+  .result.on{display:flex}
+  .result .big{font-size:28px;font-weight:900}
+  .result .pts{font-size:48px;font-weight:900;color:var(--accent)}
+  .result .pts small{font-size:16px;color:var(--muted)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .chip{padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--panel2);border:1px solid var(--line)}
+  .chip.good{border-color:var(--good);color:var(--good)}
+  .chip.bad{border-color:var(--bad);color:var(--bad)}
+  .chip.new{border-color:var(--accent);color:var(--accent);animation:pop .5s}
+  @keyframes pop{0%{transform:scale(.5)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .stat{background:var(--panel2);border-radius:12px;padding:10px;text-align:center}
+  .stat b{display:block;font-size:20px}
+  .stat span{font-size:11px;color:var(--muted)}
+
+  .history div{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .history div:last-child{border:0}
+  .history .p{font-weight:800}
+  .history .p.good{color:var(--good)} .history .p.mid{color:var(--accent)} .history .p.bad{color:var(--bad)}
+  .hidden{display:none!important}
+  footer{text-align:center;color:var(--muted);font-size:11px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">⚽ SKOR<span>AVCISI</span></div>
+    <div class="profile">
+      <div><div style="font-size:11px">XP <span id="xpText">0</span></div><div class="xpbar"><i id="xpFill"></i></div></div>
+      <div class="lvl">Sv. <span id="lvl">1</span></div>
+    </div>
+  </header>
+
+  <!-- SETUP -->
+  <section class="card" id="setup">
+    <h3>Takımları seç, skoru tahmin et</h3>
+    <div class="teams">
+      <div class="teamsel">
+        <div class="badge" id="homeBadge">FB</div>
+        <select id="homeSel"></select>
+        <div class="strength" id="homeStr"></div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="teamsel">
+        <div class="badge" id="awayBadge">AV</div>
+        <select id="awaySel"></select>
+        <div class="strength" id="awayStr"></div>
+      </div>
+    </div>
+    <div class="predict">
+      <div class="stepper"><button data-t="h" data-d="-1">−</button><div class="num" id="ph">1</div><button data-t="h" data-d="1">+</button></div>
+      <div class="vs">:</div>
+      <div class="stepper"><button data-t="a" data-d="-1">−</button><div class="num" id="pa">1</div><button data-t="a" data-d="1">+</button></div>
+    </div>
+    <p style="text-align:center;color:var(--muted);font-size:12px;margin:8px 0 12px">Tam skor <b style="color:var(--accent)">100 puan</b> · Kazanan + fark <b>50</b> · Sadece kazanan <b>25</b> · Seri bonusu her maçta artar</p>
+    <button class="btn" id="startBtn">MAÇI BAŞLAT 🔥</button>
+  </section>
+
+  <!-- MATCH -->
+  <section class="pitchwrap hidden" id="match">
+    <canvas id="pitch" width="520" height="640"></canvas>
+    <div class="pred-tag">Tahminin: <b id="predTag">1 - 1</b></div>
+    <div class="goalflash" id="goalflash"><div>GOOOL!</div></div>
+    <div class="scoreboard">
+      <div class="sb-team"><div class="mini" id="sbHomeBadge">FB</div><span id="sbHome">Fenerbahçe</span></div>
+      <div><div class="sb-score"><span id="sh">0</span>:<span id="sa">0</span></div><div class="sb-min" id="minute">00'</div></div>
+      <div class="sb-team"><div class="mini" id="sbAwayBadge">AV</div><span id="sbAway">Aston Villa</span></div>
+    </div>
+  </section>
+  <div class="controls hidden" id="controls">
+    <button data-s="1" class="active">1x</button><button data-s="2">2x</button><button data-s="4">4x</button><button id="skipBtn">Sonuca atla ⏭</button>
+  </div>
+  <section class="card hidden" id="commBox"><h3>Spiker</h3><div class="commentary" id="comm"></div></section>
+
+  <!-- RESULT -->
+  <section class="card result" id="result">
+    <div class="big" id="resTitle">Maç bitti</div>
+    <div id="resLine" style="color:var(--muted)"></div>
+    <div class="pts"><span id="resPts">0</span> <small>puan</small></div>
+    <div class="chips" id="resChips"></div>
+    <button class="btn" id="againBtn">YENİ MAÇ 🔁</button>
+  </section>
+
+  <!-- PROFILE -->
+  <section class="card">
+    <h3>Kariyerin</h3>
+    <div class="stats">
+      <div class="stat"><b id="stPlayed">0</b><span>Maç</span></div>
+      <div class="stat"><b id="stExact">0</b><span>Tam isabet</span></div>
+      <div class="stat"><b id="stStreak">0</b><span>Seri 🔥</span></div>
+      <div class="stat"><b id="stBest">0</b><span>En iyi seri</span></div>
+    </div>
+    <div class="chips" id="badges" style="margin-top:10px"></div>
+  </section>
+  <section class="card"><h3>Son maçlar</h3><div class="history" id="history"><div style="color:var(--muted)">Henüz maç oynamadın.</div></div></section>
+  <footer>Skor Avcısı · tahmin et, izle, puan topla</footer>
+</div>
+
+<script>
+/* ---------- DATA ---------- */
+const TEAMS = [
+  {n:"Fenerbahçe",s:"FB",c1:"#1e3a8a",c2:"#facc15",att:78,def:72},
+  {n:"Galatasaray",s:"GS",c1:"#b91c1c",c2:"#f59e0b",att:82,def:74},
+  {n:"Beşiktaş",s:"BJK",c1:"#111",c2:"#eee",att:74,def:70},
+  {n:"Trabzonspor",s:"TS",c1:"#7f1d1d",c2:"#38bdf8",att:72,def:69},
+  {n:"Aston Villa",s:"AV",c1:"#6b1d3a",c2:"#7dd3fc",att:76,def:75},
+  {n:"Real Madrid",s:"RM",c1:"#f8fafc",c2:"#1e3a8a",att:90,def:84},
+  {n:"Barcelona",s:"FCB",c1:"#1e3a8a",c2:"#b91c1c",att:88,def:80},
+  {n:"Man City",s:"MC",c1:"#7dd3fc",c2:"#1e293b",att:90,def:86},
+  {n:"Liverpool",s:"LFC",c1:"#b91c1c",c2:"#fef3c7",att:88,def:82},
+  {n:"Bayern",s:"FCB",c1:"#dc2626",c2:"#fff",att:89,def:81},
+  {n:"PSG",s:"PSG",c1:"#1e3a8a",c2:"#dc2626",att:87,def:79},
+  {n:"Juventus",s:"JUV",c1:"#111",c2:"#fff",att:80,def:83},
+];
+const BADGE_DEFS = [
+  {id:"first",  name:"İlk Maç 🎟️",       test:p=>p.played>=1},
+  {id:"exact1", name:"Keskin Nişancı 🎯", test:p=>p.exact>=1},
+  {id:"exact5", name:"Kahin 🔮",         test:p=>p.exact>=5},
+  {id:"streak3",name:"3'lük Seri 🔥",     test:p=>p.best>=3},
+  {id:"streak5",name:"Ateş Topu ☄️",     test:p=>p.best>=5},
+  {id:"played10",name:"Müdavim 🍿",      test:p=>p.played>=10},
+  {id:"lvl5",   name:"Seviye 5 ⭐",       test:p=>levelOf(p.xp)>=5},
+];
+const COMMENTS = {
+  chance:["{t} tehlikeli geliyor!","{t} ceza sahasına giriyor...","{t} korner kullanıyor.","{t} uzaktan şut! Kaleci çeldi.","{t} orta sahada top çeviriyor.","Direk! {t} şanssız.","{t} ofsayta takıldı."],
+  goal:["GOOOL! {t} skoru değiştiriyor!","{t} ağları havalandırdı!","Muhteşem bir vuruş, {t} öne çıkıyor!","{t} için harika bir gol!"],
+  kick:["Maç başladı!","İkinci yarı başladı."],
+};
+
+/* ---------- STATE ---------- */
+const $ = id=>document.getElementById(id);
+const load = ()=>{ try{return JSON.parse(localStorage.getItem("skoravcisi")||"null")}catch{return null} };
+const profile = load() || {xp:0,played:0,exact:0,streak:0,best:0,badges:[],history:[]};
+const save = ()=>localStorage.setItem("skoravcisi",JSON.stringify(profile));
+function levelOf(xp){ return Math.floor(Math.sqrt(xp/100))+1; }
+function xpForLevel(l){ return (l-1)*(l-1)*100; }
+
+let pred={h:1,a:1}, home, away, speed=1, raf=null, game=null;
+
+/* ---------- SETUP UI ---------- */
+function fillSelects(){
+  [ $("homeSel"), $("awaySel") ].forEach(sel=>{
+    sel.innerHTML = TEAMS.map((t,i)=>`<option value="${i}">${t.n}</option>`).join("");
+  });
+  $("homeSel").value=0; $("awaySel").value=4;
+  updateTeams();
+}
+function paintBadge(el,t){ el.textContent=t.s; el.style.background=`linear-gradient(135deg,${t.c1} 55%,${t.c2} 55%)`; el.style.color="#fff"; el.style.textShadow="0 1px 3px #000a"; }
+function updateTeams(){
+  home=TEAMS[$("homeSel").value]; away=TEAMS[$("awaySel").value];
+  if(home===away){ away=TEAMS[(+$("awaySel").value+1)%TEAMS.length]; $("awaySel").value=TEAMS.indexOf(away); }
+  paintBadge($("homeBadge"),home); paintBadge($("awayBadge"),away);
+  $("homeStr").textContent=`HÜC ${home.att} · SAV ${home.def}`;
+  $("awayStr").textContent=`HÜC ${away.att} · SAV ${away.def}`;
+}
+$("homeSel").onchange=$("awaySel").onchange=updateTeams;
+document.querySelectorAll(".stepper button").forEach(b=>b.onclick=()=>{
+  const t=b.dataset.t, d=+b.dataset.d;
+  pred[t]=Math.max(0,Math.min(9,pred[t]+d));
+  $("ph").textContent=pred.h; $("pa").textContent=pred.a;
+});
+document.querySelectorAll(".controls button[data-s]").forEach(b=>b.onclick=()=>{
+  speed=+b.dataset.s; document.querySelectorAll(".controls button[data-s]").forEach(x=>x.classList.toggle("active",x===b));
+});
+$("skipBtn").onclick=()=>{ if(game) game.skip=true; };
+$("startBtn").onclick=startMatch;
+$("againBtn").onclick=()=>{
+  $("result").classList.remove("on"); $("match").classList.add("hidden"); $("controls").classList.add("hidden"); $("commBox").classList.add("hidden");
+  $("setup").classList.remove("hidden"); window.scrollTo({top:0,behavior:"smooth"});
+};
+
+/* ---------- MATCH SIM ---------- */
+const cv=$("pitch"), ctx=cv.getContext("2d"), W=cv.width, H=cv.height;
+function pitchRect(){ return {x:30,y:30,w:W-60,h:H-60}; }
+
+function startMatch(){
+  $("setup").classList.add("hidden"); $("match").classList.remove("hidden"); $("controls").classList.remove("hidden"); $("commBox").classList.remove("hidden");
+  $("result").classList.remove("on");
+  $("predTag").textContent=`${pred.h} - ${pred.a}`;
+  $("sbHome").textContent=home.n; $("sbAway").textContent=away.n;
+  paintBadge($("sbHomeBadge"),home); paintBadge($("sbAwayBadge"),away);
+  $("comm").innerHTML=""; $("sh").textContent=0; $("sa").textContent=0;
+
+  // pre-roll the match script: expected goals from strengths (home advantage)
+  const xgH = 1.35 * (home.att/away.def) * 1.1;
+  const xgA = 1.35 * (away.att/home.def) * 0.9;
+  const events=[]; // {min,type,team}
+  for(let m=1;m<=90;m++){
+    if(Math.random()<xgH/90) events.push({min:m,type:"goal",team:"h"});
+    if(Math.random()<xgA/90) events.push({min:m,type:"goal",team:"a"});
+    if(Math.random()<0.10) events.push({min:m,type:"chance",team:Math.random()<0.5?"h":"a"});
+  }
+  events.sort((a,b)=>a.min-b.min);
+
+  game={min:0,sh:0,sa:0,events,skip:false,
+        ball:{x:W/2,y:H/2,tx:W/2,ty:H/2,v:0},
+        lastT:performance.now(),acc:0,shoot:null,done:false};
+  comment(0,COMMENTS.kick[0]);
+  newTarget();
+  cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+}
+function comment(min,text,goal){
+  const d=document.createElement("div"); if(goal) d.className="goal";
+  d.innerHTML=`<span class="m">${String(min).padStart(2,"0")}'</span>${text}`;
+  $("comm").appendChild(d); $("comm").scrollTop=$("comm").scrollHeight;
+}
+function newTarget(){
+  const p=pitchRect(); const b=game.ball;
+  b.tx=p.x+40+Math.random()*(p.w-80); b.ty=p.y+40+Math.random()*(p.h-80);
+}
+const MS_PER_MIN = 330; // 90' ≈ 30s at 1x
+function loop(now){
+  if(!game||game.done) return;
+  const dt=Math.min(100,now-game.lastT); game.lastT=now;
+  game.acc += dt*speed*(game.skip?40:1);
+  while(game.acc>=MS_PER_MIN && game.min<90){
+    game.acc-=MS_PER_MIN; game.min++;
+    if(game.min===46) comment(46,COMMENTS.kick[1]);
+    for(const e of game.events.filter(e=>e.min===game.min)){
+      const t=e.team==="h"?home:away;
+      if(e.type==="goal"){
+        if(e.team==="h") game.sh++; else game.sa++;
+        $("sh").textContent=game.sh; $("sa").textContent=game.sa;
+        comment(game.min,pick(COMMENTS.goal).replace("{t}",t.n),true);
+        game.shoot={team:e.team,t:0};
+        if(!game.skip){ const f=$("goalflash"); f.classList.remove("on"); void f.offsetWidth; f.classList.add("on"); setTimeout(()=>f.classList.remove("on"),900); }
+      } else comment(game.min,pick(COMMENTS.chance).replace("{t}",t.n));
+    }
+    $("minute").textContent=String(game.min).padStart(2,"0")+"'";
+  }
+  // ball motion
+  const b=game.ball, p=pitchRect();
+  if(game.shoot){
+    game.shoot.t+=dt*speed/450;
+    // top goal = away's net? Home attacks UP, away attacks DOWN
+    const gy = game.shoot.team==="h" ? p.y-10 : p.y+p.h+10;
+    b.x += (W/2-b.x)*0.15; b.y += (gy-b.y)*0.18;
+    if(game.shoot.t>1){ game.shoot=null; b.x=W/2; b.y=H/2; newTarget(); }
+  } else {
+    const dx=b.tx-b.x, dy=b.ty-b.y, d=Math.hypot(dx,dy);
+    const sp=0.09*speed*dt; // px/frame-ish
+    if(d<sp*2){ newTarget(); } else { b.x+=dx/d*sp; b.y+=dy/d*sp; }
+  }
+  draw();
+  if(game.min>=90){ game.done=true; finish(); return; }
+  raf=requestAnimationFrame(loop);
+}
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+function draw(){
+  const p=pitchRect();
+  // grass stripes
+  for(let i=0;i<10;i++){ ctx.fillStyle=i%2?"#2f9e44":"#37b24d"; ctx.fillRect(0,i*H/10,W,H/10); }
+  ctx.strokeStyle="rgba(255,255,255,.9)"; ctx.lineWidth=3;
+  ctx.strokeRect(p.x,p.y,p.w,p.h);
+  ctx.beginPath(); ctx.moveTo(p.x,H/2); ctx.lineTo(p.x+p.w,H/2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(W/2,H/2,60,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(W/2,H/2,4,0,Math.PI*2); ctx.fillStyle="#fff"; ctx.fill();
+  // boxes
+  const bw=260,bh=90,sw=130,sh=38;
+  [[p.y,1],[p.y+p.h,-1]].forEach(([y,dir])=>{
+    ctx.strokeRect(W/2-bw/2, dir>0?y:y-bh, bw,bh);
+    ctx.strokeRect(W/2-sw/2, dir>0?y:y-sh, sw,sh);
+    ctx.beginPath(); ctx.arc(W/2, y+dir*bh, 60, dir>0?0:Math.PI, dir>0?Math.PI:Math.PI*2); ctx.stroke();
+    // goal net
+    ctx.fillStyle="rgba(255,255,255,.25)"; ctx.fillRect(W/2-45, dir>0?y-18:y, 90,18);
+    ctx.strokeStyle="rgba(255,255,255,.5)"; ctx.lineWidth=1;
+    for(let i=0;i<=9;i++){ ctx.beginPath(); ctx.moveTo(W/2-45+i*10, dir>0?y-18:y); ctx.lineTo(W/2-45+i*10, dir>0?y:y+18); ctx.stroke(); }
+    ctx.strokeStyle="rgba(255,255,255,.9)"; ctx.lineWidth=3;
+  });
+  // team markers (static dots)
+  dots(home,true); dots(away,false);
+  // ball
+  const b=game.ball;
+  ctx.save(); ctx.shadowColor="rgba(0,0,0,.5)"; ctx.shadowBlur=8; ctx.shadowOffsetY=4;
+  ctx.beginPath(); ctx.arc(b.x,b.y,11,0,Math.PI*2); ctx.fillStyle="#fff"; ctx.fill(); ctx.restore();
+  ctx.fillStyle="#111"; const r=performance.now()/200;
+  for(let i=0;i<5;i++){ ctx.beginPath(); ctx.arc(b.x+Math.cos(r+i*1.26)*5, b.y+Math.sin(r+i*1.26)*5, 2.5,0,Math.PI*2); ctx.fill(); }
+}
+const FORM=[[.5,.9],[.2,.72],[.4,.72],[.6,.72],[.8,.72],[.3,.55],[.7,.55],[.5,.6],[.25,.4],[.5,.35],[.75,.4]];
+function dots(team,homeSide){
+  const p=pitchRect(); const t=performance.now()/900;
+  FORM.forEach(([fx,fy],i)=>{
+    const yy= homeSide ? fy : 1-fy;
+    const x=p.x+fx*p.w+Math.sin(t+i)*6, y=p.y+yy*p.h+Math.cos(t*1.3+i)*6;
+    ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fillStyle=team.c1; ctx.fill();
+    ctx.lineWidth=2; ctx.strokeStyle=team.c2; ctx.stroke(); ctx.lineWidth=3; ctx.strokeStyle="rgba(255,255,255,.9)";
+  });
+}
+
+/* ---------- SCORING ---------- */
+function finish(){
+  const {sh,sa}=game; const ph=pred.h, pa=pred.a;
+  const sign=v=>Math.sign(v);
+  let base=0, label="";
+  if(sh===ph && sa===pa){ base=100; label="TAM İSABET! 🎯"; }
+  else if(sign(sh-sa)===sign(ph-pa) && (sh-sa)===(ph-pa)){ base=50; label="Kazanan + fark doğru 👏"; }
+  else if(sign(sh-sa)===sign(ph-pa)){ base=25; label="Kazananı bildin ✅"; }
+  else { base=0; label="Olmadı... ❌"; }
+
+  if(base>0) profile.streak++; else profile.streak=0;
+  profile.best=Math.max(profile.best,profile.streak);
+  const streakBonus = base>0 ? Math.min(profile.streak-1,5)*10 : 0;
+  const upset = base>0 && Math.abs(home.att-away.att)>8 && ((home.att>away.att && sa>sh)||(away.att>home.att && sh>sa)) ? 30 : 0;
+  const total=base+streakBonus+upset;
+
+  const prevLvl=levelOf(profile.xp);
+  profile.xp+=total; profile.played++; if(base===100) profile.exact++;
+  profile.history.unshift({h:home.s,a:away.s,s:`${sh}-${sa}`,p:`${ph}-${pa}`,pts:total});
+  profile.history=profile.history.slice(0,8);
+  const newBadges=BADGE_DEFS.filter(b=>!profile.badges.includes(b.id)&&b.test(profile)).map(b=>b.id);
+  profile.badges.push(...newBadges);
+  save();
+
+  $("resTitle").textContent=label;
+  $("resLine").textContent=`Sonuç ${home.n} ${sh} - ${sa} ${away.n} · Tahminin ${ph} - ${pa}`;
+  const chips=[];
+  if(base) chips.push(`<span class="chip good">+${base} temel</span>`);
+  if(streakBonus) chips.push(`<span class="chip good">+${streakBonus} seri x${profile.streak} 🔥</span>`);
+  if(upset) chips.push(`<span class="chip good">+30 sürpriz 😱</span>`);
+  if(!base) chips.push(`<span class="chip bad">Seri sıfırlandı</span>`);
+  if(levelOf(profile.xp)>prevLvl) chips.push(`<span class="chip new">SEVİYE ATLADIN! Sv.${levelOf(profile.xp)} ⬆️</span>`);
+  newBadges.forEach(id=>chips.push(`<span class="chip new">Yeni rozet: ${BADGE_DEFS.find(b=>b.id===id).name}</span>`));
+  $("resChips").innerHTML=chips.join("");
+  animateNumber($("resPts"),0,total,900);
+  $("result").classList.add("on"); $("controls").classList.add("hidden");
+  renderProfile();
+  setTimeout(()=>$("result").scrollIntoView({behavior:"smooth",block:"center"}),100);
+}
+function animateNumber(el,from,to,dur){
+  const t0=performance.now();
+  (function step(n){ const k=Math.min(1,(n-t0)/dur); el.textContent=Math.round(from+(to-from)*(1-Math.pow(1-k,3))); if(k<1) requestAnimationFrame(step); })(t0);
+}
+function renderProfile(){
+  const lvl=levelOf(profile.xp), lo=xpForLevel(lvl), hi=xpForLevel(lvl+1);
+  $("lvl").textContent=lvl; $("xpText").textContent=profile.xp;
+  $("xpFill").style.width=Math.round((profile.xp-lo)/(hi-lo)*100)+"%";
+  $("stPlayed").textContent=profile.played; $("stExact").textContent=profile.exact;
+  $("stStreak").textContent=profile.streak; $("stBest").textContent=profile.best;
+  $("badges").innerHTML = BADGE_DEFS.map(b=>`<span class="chip ${profile.badges.includes(b.id)?"good":""}" style="${profile.badges.includes(b.id)?"":"opacity:.35"}">${b.name}</span>`).join("");
+  if(profile.history.length){
+    $("history").innerHTML=profile.history.map(h=>`<div><span>${h.h} ${h.s} ${h.a}</span><span style="color:var(--muted)">tahmin ${h.p}</span><span class="p ${h.pts>=100?"good":h.pts>0?"mid":"bad"}">+${h.pts}</span></div>`).join("");
+  }
+}
+
+fillSelects(); renderProfile();
+// draw an idle pitch so the canvas is never blank
+game={ball:{x:W/2,y:H/2,tx:W/2,ty:H/2},min:0}; draw(); game=null;
+if(new URLSearchParams(location.search).has("auto")) startMatch();
+</script>
+</body>
+</html>
