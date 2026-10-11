@@ -150,20 +150,14 @@
         <div class="strength" id="awayStr"></div>
       </div>
     </div>
-    <h3 style="margin-top:12px">Skor tahminin</h3>
-    <div class="predict">
-      <div class="stepper"><button data-t="h" data-d="-1">−</button><div class="num" id="ph">1</div><button data-t="h" data-d="1">+</button></div>
-      <div class="vs" style="padding:0">:</div>
-      <div class="stepper"><button data-t="a" data-d="-1">−</button><div class="num" id="pa">1</div><button data-t="a" data-d="1">+</button></div>
-    </div>
-    <p style="text-align:center;color:var(--muted);font-size:12px;margin:8px 0 12px">Tam skor <b style="color:var(--accent)">100</b> · Kazanan + fark <b>50</b> · Kazanan <b>25</b> · Seri bonusu · Maç sonu <b>bonus penaltılar</b></p>
+    <p style="text-align:center;color:var(--muted);font-size:12px;margin:14px 0 12px">Maçı izle, bitince <b style="color:var(--accent)">3 penaltı</b> kullan · her gol <b>15</b> puan · 3/3 yaparsan <b>+25</b> bonus · seri bonusu her golde artar</p>
     <button class="btn" id="startBtn" disabled>MAÇI BAŞLAT 🔥</button>
   </section>
 
   <!-- MATCH -->
   <section class="pitchwrap hidden" id="match">
     <canvas id="pitch" width="520" height="640"></canvas>
-    <div class="tag">Tahminin: <b id="predTag">1 - 1</b></div>
+    <div class="tag" id="matchTag">⚽ <b>CANLI</b> · maç bitince penaltılar</div>
     <div class="overlay" id="goalflash"><div>GOOOL!</div></div>
     <div class="scoreboard">
       <div class="sb-team"><div class="mini"><img id="sbHomeImg" alt=""></div><span id="sbHome"></span></div>
@@ -199,14 +193,14 @@
     <h3>Kariyerin</h3>
     <div class="stats">
       <div class="stat"><b id="stPlayed">0</b><span>Maç</span></div>
-      <div class="stat"><b id="stExact">0</b><span>Tam isabet</span></div>
-      <div class="stat"><b id="stStreak">0</b><span>Seri 🔥</span></div>
+      <div class="stat"><b id="stPen">0</b><span>Penaltı golü</span></div>
+      <div class="stat"><b id="stStreak">0</b><span>Gol serisi 🔥</span></div>
       <div class="stat"><b id="stBest">0</b><span>En iyi seri</span></div>
     </div>
     <div class="chips" id="badges" style="margin-top:10px"></div>
   </section>
   <section class="card"><h3>Son maçlar</h3><div class="history" id="history"><div style="color:var(--muted)">Henüz maç oynamadın.</div></div></section>
-  <footer>Skor Avcısı · tahmin et, izle, vur, puan topla<br>Takım verileri ve logolar: ESPN herkese açık API · güç puanları güncel puan durumundan hesaplanır</footer>
+  <footer>Skor Avcısı · maçı izle, penaltıları vur, puan topla<br>Takım verileri ve logolar: ESPN herkese açık API · güç puanları güncel puan durumundan hesaplanır</footer>
 </div>
 
 <script src="teams-data.js"></script>
@@ -303,11 +297,11 @@ function levelOf(xp){ return Math.floor(Math.sqrt(xp/100))+1; }
 function xpForLevel(l){ return (l-1)*(l-1)*100; }
 const BADGE_DEFS = [
   {id:"first",  name:"İlk Maç 🎟️",       test:p=>p.played>=1},
-  {id:"exact1", name:"Keskin Nişancı 🎯", test:p=>p.exact>=1},
-  {id:"exact5", name:"Kahin 🔮",         test:p=>p.exact>=5},
-  {id:"streak3",name:"3'lük Seri 🔥",     test:p=>p.best>=3},
-  {id:"streak5",name:"Ateş Topu ☄️",     test:p=>p.best>=5},
-  {id:"pen10",  name:"Penaltı Kralı 👑",  test:p=>p.penGoals>=10},
+  {id:"pen1",   name:"İlk Gol ⚽",        test:p=>p.penGoals>=1},
+  {id:"hat1",   name:"Hat-trick 🎩",      test:p=>p.exact>=1},
+  {id:"streak5",name:"5'lik Seri 🔥",     test:p=>p.best>=5},
+  {id:"streak10",name:"Ateş Topu ☄️",    test:p=>p.best>=10},
+  {id:"pen25",  name:"Penaltı Kralı 👑",  test:p=>p.penGoals>=25},
   {id:"played10",name:"Müdavim 🍿",      test:p=>p.played>=10},
   {id:"lvl5",   name:"Seviye 5 ⭐",       test:p=>levelOf(p.xp)>=5},
 ];
@@ -316,7 +310,7 @@ const COMMENTS = {
   goal:["GOOOL! {t} skoru değiştiriyor!","{t} ağları havalandırdı!","Muhteşem bir vuruş, {t}!","{t} için harika bir gol!"],
 };
 
-let league=LEAGUES[0], teams=[], pred={h:1,a:1}, home, away, speed=1, raf=null, game=null;
+let league=LEAGUES[0], teams=[], home, away, speed=1, raf=null, game=null;
 
 /* ---------- SETUP UI ---------- */
 function renderLeagueBar(){
@@ -349,10 +343,6 @@ function updateTeams(){
 $("homeSel").onchange=$("awaySel").onchange=updateTeams;
 $("rndBtn").onclick=()=>{ if(!teams.length) return; const a=Math.floor(Math.random()*teams.length); let b=Math.floor(Math.random()*(teams.length-1)); if(b>=a) b++; $("homeSel").value=a; $("awaySel").value=b; updateTeams(); };
 $("homeBadge").onclick=$("awayBadge").onclick=()=>$("rndBtn").click();
-document.querySelectorAll(".stepper button").forEach(b=>b.onclick=()=>{
-  pred[b.dataset.t]=clamp(pred[b.dataset.t]+ +b.dataset.d,0,9);
-  $("ph").textContent=pred.h; $("pa").textContent=pred.a;
-});
 document.querySelectorAll(".controls button[data-s]").forEach(b=>b.onclick=()=>{
   speed=+b.dataset.s; document.querySelectorAll(".controls button[data-s]").forEach(x=>x.classList.toggle("active",x===b));
 });
@@ -375,7 +365,6 @@ const MS_PER_MIN=330;
 async function startMatch(){
   $("setup").classList.add("hidden"); ["match","controls","commBox"].forEach(i=>$(i).classList.remove("hidden"));
   $("result").classList.remove("on"); $("pen").classList.add("hidden");
-  $("predTag").textContent=`${pred.h} - ${pred.a}`;
   $("sbHome").textContent=home.n; $("sbAway").textContent=away.n;
   $("sbHomeImg").src=home.logo; $("sbAwayImg").src=away.logo;
   $("comm").innerHTML=""; $("sh").textContent=0; $("sa").textContent=0; $("minute").textContent="00'";
@@ -546,7 +535,7 @@ function resolvePen(goal,text){
   flash($("penflash"),text);
 }
 function nextPen(){
-  pen.shot++; if(pen.shot>=PEN_SHOTS){ const g=pen.goals; const done=pen.onDone; pen=null; cancelAnimationFrame(penRaf); done(g); return; }
+  pen.shot++; if(pen.shot>=PEN_SHOTS){ const results=pen.results; const done=pen.onDone; pen=null; cancelAnimationFrame(penRaf); done(results); return; }
   Object.assign(pen.ball,{x:PW/2,y:-30,vx:0,vy:0,z:0}); Object.assign(pen.keeper,{x:PW/2,tx:PW/2,dive:0}); pen.phase="roll"; pen.t=0; updatePenHud();
   $("penHint").textContent="Top sana geliyor...";
 }
@@ -592,37 +581,34 @@ function drawPen(){
 
 /* ---------- SCORING ---------- */
 function finish(){
-  const {sh,sa}=game; const ph=pred.h, pa=pred.a; const sign=Math.sign;
-  let base=0,label="";
-  if(sh===ph && sa===pa){ base=100; label="TAM İSABET! 🎯"; }
-  else if(sign(sh-sa)===sign(ph-pa) && (sh-sa)===(ph-pa)){ base=50; label="Kazanan + fark doğru 👏"; }
-  else if(sign(sh-sa)===sign(ph-pa)){ base=25; label="Kazananı bildin ✅"; }
-  else { base=0; label="Olmadı... ❌"; }
+  const {sh,sa}=game;
+  const label = sh>sa ? `${home.n} kazandı! 🏆` : sa>sh ? `${away.n} kazandı! 🏆` : "Berabere 🤝";
   $("controls").classList.add("hidden");
   comment(90,`Maç bitti: ${home.n} ${sh} - ${sa} ${away.n}. Şimdi bonus penaltılar!`,"goal");
 
-  startPenalties(penGoals=>{
-    if(base>0) profile.streak++; else profile.streak=0;
+  startPenalties(penResults=>{
+    const penGoals=penResults.filter(Boolean).length;
+    // goal streak runs across matches: every scored penalty extends it, a miss resets it
+    let streakBonus=0;
+    penResults.forEach(g=>{ if(g){ profile.streak++; streakBonus+=Math.min(profile.streak-1,5)*5; } else profile.streak=0; });
     profile.best=Math.max(profile.best,profile.streak);
-    const streakBonus = base>0 ? Math.min(profile.streak-1,5)*10 : 0;
-    const upset = base>0 && Math.abs(home.att-away.att)>8 && ((home.att>away.att && sa>sh)||(away.att>home.att && sh>sa)) ? 30 : 0;
-    const penBonus=penGoals*PEN_PTS;
-    const total=base+streakBonus+upset+penBonus;
+    const penPts=penGoals*PEN_PTS;
+    const perfect = penGoals===PEN_SHOTS ? 25 : 0;
+    const total=penPts+streakBonus+perfect;
     const prevLvl=levelOf(profile.xp);
-    profile.xp+=total; profile.played++; profile.penGoals+=penGoals; if(base===100) profile.exact++;
-    profile.history.unshift({h:home.s,a:away.s,s:`${sh}-${sa}`,p:`${ph}-${pa}`,pts:total});
+    profile.xp+=total; profile.played++; profile.penGoals+=penGoals; if(perfect) profile.exact++;
+    profile.history.unshift({h:home.s,a:away.s,s:`${sh}-${sa}`,p:`${penGoals}/${PEN_SHOTS}`,pts:total});
     profile.history=profile.history.slice(0,8);
     const newBadges=BADGE_DEFS.filter(b=>!profile.badges.includes(b.id)&&b.test(profile)).map(b=>b.id);
     profile.badges.push(...newBadges); save();
 
     $("resTitle").textContent=label;
-    $("resLine").textContent=`${home.n} ${sh} - ${sa} ${away.n} · Tahminin ${ph} - ${pa} · Penaltı ${penGoals}/${PEN_SHOTS}`;
+    $("resLine").textContent=`${home.n} ${sh} - ${sa} ${away.n} · Penaltı ${penGoals}/${PEN_SHOTS}`;
     const chips=[];
-    if(base) chips.push(`<span class="chip good">+${base} tahmin</span>`);
-    if(streakBonus) chips.push(`<span class="chip good">+${streakBonus} seri x${profile.streak} 🔥</span>`);
-    if(upset) chips.push(`<span class="chip good">+30 sürpriz 😱</span>`);
-    if(penBonus) chips.push(`<span class="chip good">+${penBonus} penaltı 🎯</span>`);
-    if(!base) chips.push(`<span class="chip bad">Seri sıfırlandı</span>`);
+    if(penPts) chips.push(`<span class="chip good">+${penPts} penaltı 🎯</span>`);
+    if(streakBonus) chips.push(`<span class="chip good">+${streakBonus} gol serisi 🔥</span>`);
+    if(perfect) chips.push(`<span class="chip good">+25 hat-trick 🎩</span>`);
+    if(!penGoals) chips.push(`<span class="chip bad">Hiç gol yok, seri sıfırlandı</span>`);
     if(levelOf(profile.xp)>prevLvl) chips.push(`<span class="chip new">SEVİYE ATLADIN! Sv.${levelOf(profile.xp)} ⬆️</span>`);
     newBadges.forEach(id=>chips.push(`<span class="chip new">Yeni rozet: ${BADGE_DEFS.find(b=>b.id===id).name}</span>`));
     $("resChips").innerHTML=chips.join("");
@@ -640,11 +626,11 @@ function renderProfile(){
   const lvl=levelOf(profile.xp), lo=xpForLevel(lvl), hi=xpForLevel(lvl+1);
   $("lvl").textContent=lvl; $("xpText").textContent=profile.xp;
   $("xpFill").style.width=Math.round((profile.xp-lo)/(hi-lo)*100)+"%";
-  $("stPlayed").textContent=profile.played; $("stExact").textContent=profile.exact;
+  $("stPlayed").textContent=profile.played; $("stPen").textContent=profile.penGoals;
   $("stStreak").textContent=profile.streak; $("stBest").textContent=profile.best;
   $("badges").innerHTML = BADGE_DEFS.map(b=>`<span class="chip ${profile.badges.includes(b.id)?"good":""}" style="${profile.badges.includes(b.id)?"":"opacity:.35"}">${b.name}</span>`).join("");
   if(profile.history.length){
-    $("history").innerHTML=profile.history.map(h=>`<div><span>${h.h} ${h.s} ${h.a}</span><span style="color:var(--muted)">tahmin ${h.p}</span><span class="p ${h.pts>=100?"good":h.pts>0?"mid":"bad"}">+${h.pts}</span></div>`).join("");
+    $("history").innerHTML=profile.history.map(h=>`<div><span>${h.h} ${h.s} ${h.a}</span><span style="color:var(--muted)">penaltı ${h.p}</span><span class="p ${h.pts>=100?"good":h.pts>0?"mid":"bad"}">+${h.pts}</span></div>`).join("");
   }
 }
 
