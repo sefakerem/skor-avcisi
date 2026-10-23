@@ -114,7 +114,7 @@
         <div class="seg" id="durSeg"><button type="button" data-v="15">15s</button><button type="button" data-v="30" class="active">30s</button><button type="button" data-v="45">45s</button><button type="button" data-v="60">60s</button></div>
       </label>
       <label class="f">Tempo
-        <div class="seg" id="tmpSeg"><button type="button" data-v="10">Sakin</button><button type="button" data-v="14" class="active">Normal</button><button type="button" data-v="19">Çılgın</button></div>
+        <div class="seg" id="tmpSeg"><button type="button" data-v="12">Sakin</button><button type="button" data-v="17" class="active">Normal</button><button type="button" data-v="22">Çılgın</button></div>
       </label>
     </div>
     <div class="fields">
@@ -211,7 +211,7 @@ function loadLogo(team){
 
 /* ---------- ARAYÜZ ---------- */
 const $=id=>document.getElementById(id);
-let league=LEAGUES[0],teams=[],home,away,duration=30,tempo=14;
+let league=LEAGUES[0],teams=[],home,away,duration=30,tempo=17;
 function renderLeagueBar(){ $("leaguebar").innerHTML=LEAGUES.map(l=>`<button type="button" data-id="${l.id}" class="${l===league?"active":""}">${l.flag} ${l.n}</button>`).join("");
   $("leaguebar").querySelectorAll("button").forEach(b=>b.onclick=()=>{ league=LEAGUES.find(l=>l.id===b.dataset.id); renderLeagueBar(); selectLeague(); }); }
 async function selectLeague(){
@@ -301,9 +301,9 @@ const CV=$("cv"),ctx=CV.getContext("2d"),W=1080,H=1920;
 const BAN={x:24,y:26,w:1032,h:292,r:28};
 const P={x:14,y:392,w:1052,h:1428};
 const IN=26, NETD=104, TOPL=P.y+NETD+14, BOTL=P.y+P.h-NETD-14, LEFT=P.x+IN, RIGHT=P.x+P.w-IN;
-const MOUTH=420, R=66;
+const MOUTH=480, R=60;
 /* maç dengesi: kaleci boyu/hızı/şaşma payı ve topun kaleye yönelme gücü */
-const CFG={KW:84,KH:40,KSP:3.0,KERR:340,KRES:1.0,GRAV:0.011,REST:0.9,PR:15,CLEAR:1.9,VCAP:2.4};
+const CFG={KW:84,KH:40,KSP:3.0,KERR:340,KRES:1.0,REST:1.0,PR:11,SQ:0.09};
 const POSTS=[[W/2-MOUTH/2,0],[W/2+MOUTH/2,0]];
 const DF='Anton,Impact,sans-serif', UF='"Barlow Condensed",sans-serif';
 const LEAD=1800, TAIL=4200, CELEB=1500;
@@ -318,12 +318,12 @@ async function run(record){
   $("stage").scrollIntoView({behavior:"smooth",block:"start"});
   const [hImg,aImg]=await Promise.all([loadLogo(home),loadLogo(away)]);
   if(document.fonts&&document.fonts.ready){ try{ await document.fonts.ready }catch{} }
-  game={t0:performance.now(),last:performance.now(),min:0,sh:0,sa:0,record,hImg,aImg,vmax:tempo*(30/duration),grav:tempo*CFG.GRAV*Math.pow(30/duration,2),vmin:2.6*(30/duration),ksp:CFG.KSP*(tempo/14)*(30/duration),
+  game={t0:performance.now(),last:performance.now(),min:0,sh:0,sa:0,record,hImg,aImg,vmax:tempo*(30/duration),ksp:CFG.KSP*(tempo/17)*(30/duration),
     title:($("title").value||"DERBİ").toUpperCase(),handle:$("handle").value,cta:$("cta").value,
     msPerMin:(duration*1000-LEAD-TAIL)/90,flash:null,parts:[],shake:0,celeb:0,ftAt:0,done:false,
     saveFx:null,
-    discs:[{team:"h",t:home,img:hImg,attack:-1,x:0,y:0,vx:0,vy:0,trail:[],spin:0,r:R},
-           {team:"a",t:away,img:aImg,attack:1,x:0,y:0,vx:0,vy:0,trail:[],spin:0,r:R}],
+    discs:[{team:"h",t:home,img:hImg,attack:-1,x:0,y:0,vx:0,vy:0,trail:[],rot:0,sq:0,sqa:0,r:R},
+           {team:"a",t:away,img:aImg,attack:1,x:0,y:0,vx:0,vy:0,trail:[],rot:Math.PI,sq:0,sqa:0,r:R}],
     keepers:[{side:-1,x:W/2,err:0,ph:0},{side:1,x:W/2,err:0,ph:3.1}]};
   kickoff();
   audioOn();
@@ -338,10 +338,21 @@ function kickoff(){
     d.vx=Math.cos(a)*v; d.vy=Math.sin(a)*v; d.inNet=false; });
   game.keepers.forEach(k=>{ k.err=(Math.random()-0.5)*CFG.KERR; });
 }
-/* kaleci/savunma açılışı: topu karşı yarıya doğru fırlatır, maç sahaya yayılır */
-function clearUpfield(d,mult){
-  const a=(d.attack<0?Math.PI/2:-Math.PI/2)+(Math.random()-0.5)*1.5, sp=game.vmax*mult*(0.85+Math.random()*0.4);
-  d.vx=Math.cos(a)*sp; d.vy=Math.sin(a)*sp;
+/* çarpma: ezilme, toz ve ses. nx,ny = çarpışma normali (topun itildiği yön) */
+function bump(d,nx,ny,power){
+  d.sq=1; d.sqa=Math.atan2(ny,nx);
+  jitter(d,0.15);
+  const cx=d.x-nx*d.r, cy=d.y-ny*d.r;
+  game.parts.push({x:cx,y:cy,ring:1,r0:d.r*0.35,life:16,col:"#ffffff"});
+  for(let i=0;i<5;i++){ const a=Math.atan2(ny,nx)+(Math.random()-0.5)*2.2, sp=2+Math.random()*5;
+    game.parts.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:16+Math.random()*16,col:"rgba(255,255,255,.75)",sz:3+Math.random()*4}); }
+  game.shake=Math.max(game.shake,power*10);
+  hit(power);
+}
+/* kaleci açılışı: topu karşı yarıya doğru yumruklar */
+function clearUpfield(d){
+  const a=(d.attack<0?Math.PI/2:-Math.PI/2)+(Math.random()-0.5)*1.9;
+  d.vx=Math.cos(a)*game.vmax; d.vy=Math.sin(a)*game.vmax;
 }
 /* daire-daire ve daire-dikdörtgen çarpışması: direk ve kaleci katı cisim */
 function hitCircle(d,cx,cy,cr,rest){
@@ -379,7 +390,7 @@ function keeperHit(d,now){
   const y=kp.side<0?TOPL-CFG.KH/2+3:BOTL+CFG.KH/2-3;
   if(!hitRect(d,kp.x,y,CFG.KW,CFG.KH,CFG.REST,kp.vx||0)) return false;
   /* kurtarış = uzun açılış: top karşı yarıya uçar, maç sahaya yayılır */
-  clearUpfield(d,CFG.CLEAR);
+  clearUpfield(d);
   game.shake=Math.max(game.shake,9); ohh();
   game.saveFx={x:clamp(kp.x,260,W-260),y:kp.side<0?TOPL+120:BOTL-120,t:now};
   return true;
@@ -434,35 +445,31 @@ function loop(now){
 function step(k,now){
   const g=game;
   g.shake=Math.max(0,g.shake-k*0.9);
-  g.parts.forEach(p=>{ p.x+=p.vx*k; p.y+=p.vy*k; p.vy+=0.45*k; p.vx*=0.99; p.life-=k; });
+  g.parts.forEach(p=>{ if(!p.ring){ p.x+=p.vx*k; p.y+=p.vy*k; p.vy+=0.45*k; p.vx*=0.99; } p.life-=k; });
   g.parts=g.parts.filter(p=>p.life>0);
   if(g.celeb>0){ g.celeb-=k*16.67; if(g.celeb<=0){ g.celeb=0; kickoff(); } return; }
   if(g.ftAt) return;
   stepKeepers(k,now);
   for(const d of g.discs){
-    /* saldırdığı kaleye doğru çekim kuvveti: top hızlanarak gider, sekerek döner */
-    d.vy+=g.grav*d.attack*k;
-    let v=Math.hypot(d.vx,d.vy)||0.001;
-    const vcap=g.vmax*CFG.VCAP;
-    if(v>vcap){ d.vx*=vcap/v; d.vy*=vcap/v; v=vcap; }
-    else if(v>g.vmax){ const f=1-0.003*k; d.vx*=f; d.vy*=f; v*=f; }   /* açılışın hızı yavaşça sönsün */
-    if(v<g.vmin){ d.vx*=g.vmin/v; d.vy*=g.vmin/v; }
-    d.x+=d.vx*k; d.y+=d.vy*k; d.spin+=d.vx*0.0022*k;
-    d.trail.push({x:d.x,y:d.y}); if(d.trail.length>14) d.trail.shift();
-    if(d.x-d.r<LEFT){ d.x=LEFT+d.r; d.vx=Math.abs(d.vx)*CFG.REST; jitter(d); hit(v/g.vmax*0.2); }
-    if(d.x+d.r>RIGHT){ d.x=RIGHT-d.r; d.vx=-Math.abs(d.vx)*CFG.REST; jitter(d); hit(v/g.vmax*0.2); }
-    /* direkler ve kaleci */
+    /* enerji korunur: hız sabit, yön çarpışmalarla değişir (bilardo fiziği) */
+    const v=Math.hypot(d.vx,d.vy)||1; d.vx=d.vx/v*g.vmax; d.vy=d.vy/v*g.vmax;
+    d.x+=d.vx*k; d.y+=d.vy*k;
+    d.rot+=(d.vx/d.r)*0.62*k;                 /* yuvarlanma: hıza bağlı dönüş */
+    d.sq=Math.max(0,d.sq-CFG.SQ*k);           /* çarpma ezilmesi sönümü */
+    d.trail.push({x:d.x,y:d.y}); if(d.trail.length>12) d.trail.shift();
+    if(d.x-d.r<LEFT){ d.x=LEFT+d.r; d.vx=Math.abs(d.vx); bump(d,1,0,0.22); }
+    if(d.x+d.r>RIGHT){ d.x=RIGHT-d.r; d.vx=-Math.abs(d.vx); bump(d,-1,0,0.22); }
+    /* direkler ve kaleci: katı cisim */
     const gl=d.attack<0?TOPL:BOTL;
-    for(const [px] of POSTS) if(hitCircle(d,px,gl,CFG.PR,0.95)) hit(0.34);
+    for(const [px] of POSTS) if(hitCircle(d,px,gl,CFG.PR,1.0)){ const nx=(d.x-px)/(Math.hypot(d.x-px,d.y-gl)||1);
+      bump(d,nx,(d.y-gl)/(Math.hypot(d.x-px,d.y-gl)||1),0.5); }
     keeperHit(d,now);
     const inMouth=Math.abs(d.x-W/2)<MOUTH/2-CFG.PR;
     if(d.attack<0&&inMouth&&d.y<TOPL) return score(d,now);
     if(d.attack>0&&inMouth&&d.y>BOTL) return score(d,now);
-    /* kale ağzı açık: saldıran takımın topu çizgiyi geçebilir, geri kalan her yer duvar */
-    if(d.y-d.r<TOPL&&!(d.attack<0&&inMouth)){ d.y=TOPL+d.r; d.vy=Math.abs(d.vy)*CFG.REST; jitter(d); hit(0.16);
-    }
-    if(d.y+d.r>BOTL&&!(d.attack>0&&inMouth)){ d.y=BOTL-d.r; d.vy=-Math.abs(d.vy)*CFG.REST; jitter(d); hit(0.16);
-    }
+    /* kale ağzı açık, kalan her yer duvar */
+    if(d.y-d.r<TOPL&&!(d.attack<0&&inMouth)){ d.y=TOPL+d.r; d.vy=Math.abs(d.vy); bump(d,0,1,0.26); }
+    if(d.y+d.r>BOTL&&!(d.attack>0&&inMouth)){ d.y=BOTL-d.r; d.vy=-Math.abs(d.vy); bump(d,0,-1,0.26); }
   }
   // logo çarpışması
   const [a,b]=g.discs, dx=b.x-a.x, dy=b.y-a.y, dist=Math.hypot(dx,dy)||1;
@@ -471,7 +478,7 @@ function step(k,now){
     const av=a.vx*nx+a.vy*ny, bv=b.vx*nx+b.vy*ny, diff=bv-av;
     a.vx+=nx*diff*CFG.REST; a.vy+=ny*diff*CFG.REST; b.vx-=nx*diff*CFG.REST; b.vy-=ny*diff*CFG.REST; jitter(a); jitter(b); g.shake=Math.max(g.shake,4); hit(0.3); }
 }
-function jitter(d){ const a=Math.atan2(d.vy,d.vx)+(Math.random()-0.5)*0.26, s=Math.hypot(d.vx,d.vy); d.vx=Math.cos(a)*s; d.vy=Math.sin(a)*s; }
+function jitter(d,amt){ const a=Math.atan2(d.vy,d.vx)+(Math.random()-0.5)*(amt||0.26), s=Math.hypot(d.vx,d.vy); d.vx=Math.cos(a)*s; d.vy=Math.sin(a)*s; }
 function score(d,now){
   const g=game; if(d.team==="h") g.sh++; else g.sa++;
   d.y=d.attack<0?TOPL-40:BOTL+40; d.vx=d.vy=0; d.inNet=true;
@@ -561,8 +568,15 @@ function pitch(now){
   // izler + diskler
   game.discs.forEach(d=>{ d.trail.forEach((p,i)=>{ const f=i/d.trail.length; ctx.globalAlpha=f*0.16; ctx.beginPath();
       ctx.arc(p.x,p.y,d.r*(0.25+f*0.45),0,Math.PI*2); ctx.fillStyle=d.t.col||d.t.c; ctx.fill(); }); ctx.globalAlpha=1; });
-  game.discs.forEach(d=>{ ctx.save(); ctx.translate(d.x,d.y); ctx.rotate(Math.sin(d.spin)*0.14); ctx.translate(-d.x,-d.y); crest(d.img,d.t,d.x,d.y,d.r); ctx.restore(); });
-  game.parts.forEach(p=>{ ctx.globalAlpha=Math.min(1,p.life/30); ctx.fillStyle=p.col; ctx.fillRect(p.x,p.y,p.sz,p.sz*1.6); }); ctx.globalAlpha=1;
+  game.discs.forEach(d=>{
+    ctx.save(); ctx.globalAlpha=0.3; ctx.beginPath(); ctx.ellipse(d.x+9,d.y+14,d.r*0.97,d.r*0.9,0,0,Math.PI*2);
+    ctx.fillStyle="#031007"; ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(d.x,d.y);
+    if(d.sq>0){ ctx.rotate(d.sqa); ctx.scale(1-0.24*d.sq,1+0.17*d.sq); ctx.rotate(-d.sqa); }
+    ctx.rotate(d.rot); crest(d.img,d.t,0,0,d.r); ctx.restore(); });
+  game.parts.forEach(p=>{ ctx.globalAlpha=Math.min(1,p.life/(p.ring?16:30));
+    if(p.ring){ ctx.beginPath(); ctx.arc(p.x,p.y,p.r0+(16-p.life)*4,0,Math.PI*2); ctx.lineWidth=5; ctx.strokeStyle=p.col; ctx.stroke(); }
+    else { ctx.fillStyle=p.col; ctx.fillRect(p.x,p.y,p.sz,p.sz*1.6); } }); ctx.globalAlpha=1;
   ctx.restore();
 }
 function draw(now,el){
