@@ -303,7 +303,7 @@ const P={x:14,y:392,w:1052,h:1428};
 const IN=26, NETD=104, TOPL=P.y+NETD+14, BOTL=P.y+P.h-NETD-14, LEFT=P.x+IN, RIGHT=P.x+P.w-IN;
 const MOUTH=420, R=66;
 /* maç dengesi: kaleci boyu/hızı/şaşma payı ve topun kaleye yönelme gücü */
-const CFG={KW:96,KH:40,KSP:3.0,KERR:230,KRES:0.8,GRAV:0.022,REST:0.9,PR:15};
+const CFG={KW:84,KH:40,KSP:3.0,KERR:340,KRES:1.0,GRAV:0.011,REST:0.9,PR:15,CLEAR:1.9,VCAP:2.4};
 const POSTS=[[W/2-MOUTH/2,0],[W/2+MOUTH/2,0]];
 const DF='Anton,Impact,sans-serif', UF='"Barlow Condensed",sans-serif';
 const LEAD=1800, TAIL=4200, CELEB=1500;
@@ -318,7 +318,7 @@ async function run(record){
   $("stage").scrollIntoView({behavior:"smooth",block:"start"});
   const [hImg,aImg]=await Promise.all([loadLogo(home),loadLogo(away)]);
   if(document.fonts&&document.fonts.ready){ try{ await document.fonts.ready }catch{} }
-  game={t0:performance.now(),last:performance.now(),min:0,sh:0,sa:0,record,hImg,aImg,vmax:tempo*(30/duration),grav:tempo*CFG.GRAV*Math.pow(30/duration,2),vmin:2.6*(30/duration),ksp:CFG.KSP*(30/duration),
+  game={t0:performance.now(),last:performance.now(),min:0,sh:0,sa:0,record,hImg,aImg,vmax:tempo*(30/duration),grav:tempo*CFG.GRAV*Math.pow(30/duration,2),vmin:2.6*(30/duration),ksp:CFG.KSP*(tempo/14)*(30/duration),
     title:($("title").value||"DERBİ").toUpperCase(),handle:$("handle").value,cta:$("cta").value,
     msPerMin:(duration*1000-LEAD-TAIL)/90,flash:null,parts:[],shake:0,celeb:0,ftAt:0,done:false,
     saveFx:null,
@@ -337,6 +337,11 @@ function kickoff(){
     const a=(i?0:Math.PI)+(Math.random()-0.5)*1.1, v=game.vmax*0.8;
     d.vx=Math.cos(a)*v; d.vy=Math.sin(a)*v; d.inNet=false; });
   game.keepers.forEach(k=>{ k.err=(Math.random()-0.5)*CFG.KERR; });
+}
+/* kaleci/savunma açılışı: topu karşı yarıya doğru fırlatır, maç sahaya yayılır */
+function clearUpfield(d,mult){
+  const a=(d.attack<0?Math.PI/2:-Math.PI/2)+(Math.random()-0.5)*1.5, sp=game.vmax*mult*(0.85+Math.random()*0.4);
+  d.vx=Math.cos(a)*sp; d.vy=Math.sin(a)*sp;
 }
 /* daire-daire ve daire-dikdörtgen çarpışması: direk ve kaleci katı cisim */
 function hitCircle(d,cx,cy,cr,rest){
@@ -373,6 +378,8 @@ function keeperHit(d,now){
   const kp=game.keepers.find(x=>x.side===d.attack); if(!kp) return false;
   const y=kp.side<0?TOPL-CFG.KH/2+3:BOTL+CFG.KH/2-3;
   if(!hitRect(d,kp.x,y,CFG.KW,CFG.KH,CFG.REST,kp.vx||0)) return false;
+  /* kurtarış = uzun açılış: top karşı yarıya uçar, maç sahaya yayılır */
+  clearUpfield(d,CFG.CLEAR);
   game.shake=Math.max(game.shake,9); ohh();
   game.saveFx={x:clamp(kp.x,260,W-260),y:kp.side<0?TOPL+120:BOTL-120,t:now};
   return true;
@@ -436,7 +443,9 @@ function step(k,now){
     /* saldırdığı kaleye doğru çekim kuvveti: top hızlanarak gider, sekerek döner */
     d.vy+=g.grav*d.attack*k;
     let v=Math.hypot(d.vx,d.vy)||0.001;
-    if(v>g.vmax){ d.vx*=g.vmax/v; d.vy*=g.vmax/v; v=g.vmax; }
+    const vcap=g.vmax*CFG.VCAP;
+    if(v>vcap){ d.vx*=vcap/v; d.vy*=vcap/v; v=vcap; }
+    else if(v>g.vmax){ const f=1-0.003*k; d.vx*=f; d.vy*=f; v*=f; }   /* açılışın hızı yavaşça sönsün */
     if(v<g.vmin){ d.vx*=g.vmin/v; d.vy*=g.vmin/v; }
     d.x+=d.vx*k; d.y+=d.vy*k; d.spin+=d.vx*0.0022*k;
     d.trail.push({x:d.x,y:d.y}); if(d.trail.length>14) d.trail.shift();
@@ -450,8 +459,10 @@ function step(k,now){
     if(d.attack<0&&inMouth&&d.y<TOPL) return score(d,now);
     if(d.attack>0&&inMouth&&d.y>BOTL) return score(d,now);
     /* kale ağzı açık: saldıran takımın topu çizgiyi geçebilir, geri kalan her yer duvar */
-    if(d.y-d.r<TOPL&&!(d.attack<0&&inMouth)){ d.y=TOPL+d.r; d.vy=Math.abs(d.vy)*CFG.REST; jitter(d); hit(0.16); }
-    if(d.y+d.r>BOTL&&!(d.attack>0&&inMouth)){ d.y=BOTL-d.r; d.vy=-Math.abs(d.vy)*CFG.REST; jitter(d); hit(0.16); }
+    if(d.y-d.r<TOPL&&!(d.attack<0&&inMouth)){ d.y=TOPL+d.r; d.vy=Math.abs(d.vy)*CFG.REST; jitter(d); hit(0.16);
+    }
+    if(d.y+d.r>BOTL&&!(d.attack>0&&inMouth)){ d.y=BOTL-d.r; d.vy=-Math.abs(d.vy)*CFG.REST; jitter(d); hit(0.16);
+    }
   }
   // logo çarpışması
   const [a,b]=g.discs, dx=b.x-a.x, dy=b.y-a.y, dist=Math.hypot(dx,dy)||1;
