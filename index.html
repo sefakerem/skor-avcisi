@@ -114,7 +114,7 @@
         <div class="seg" id="durSeg"><button type="button" data-v="15">15s</button><button type="button" data-v="30" class="active">30s</button><button type="button" data-v="45">45s</button><button type="button" data-v="60">60s</button></div>
       </label>
       <label class="f">Tempo
-        <div class="seg" id="tmpSeg"><button type="button" data-v="5">Sakin</button><button type="button" data-v="7" class="active">Normal</button><button type="button" data-v="11">Çılgın</button></div>
+        <div class="seg" id="tmpSeg"><button type="button" data-v="7">Sakin</button><button type="button" data-v="9" class="active">Normal</button><button type="button" data-v="13">Çılgın</button></div>
       </label>
     </div>
     <div class="fields">
@@ -179,13 +179,22 @@ async function loadLeague(lg){
   cache[lg.id]={t:Date.now(),entries,src:dataSource}; try{localStorage.setItem("logoderbisi_teams",JSON.stringify(cache))}catch{}
   return buildTeams(entries,lg);
 }
+/* Lig başına gömülü logo paketi (yalnız seçilen lig yüklenir) */
+const packs={};
+function loadPack(id){
+  if(packs[id]) return packs[id];
+  return packs[id]=new Promise(res=>{ const sc=document.createElement("script");
+    sc.src=`logos/${id}.js`; sc.onload=()=>res(true); sc.onerror=()=>res(false); document.head.appendChild(sc); });
+}
+const logoSrc=t=>t.custom||(window.TEAM_LOGOS&&window.TEAM_LOGOS[t.id])||t.logo||"";
+
 /* Arma görseli (canvas kaydı için CORS güvenli) + baskın renk */
 let logoFailed=false;
 function loadLogo(team){
   return new Promise(res=>{
-    const src=team.custom||team.logo;
+    const src=logoSrc(team);
     if(!src){ team.col=team.c; return res(null); }
-    const img=new Image(); if(!team.custom) img.crossOrigin="anonymous";
+    const img=new Image(); if(/^https?:/.test(src)) img.crossOrigin="anonymous";
     img.onload=()=>{ try{ const c=document.createElement("canvas"); c.width=c.height=24; const x=c.getContext("2d"); x.drawImage(img,0,0,24,24);
       const px=x.getImageData(0,0,24,24).data; let best=null,bs=-1;
       for(let i=0;i<px.length;i+=4){ const r=px[i],g=px[i+1],b=px[i+2],a=px[i+3]; if(a<200) continue; const mx=Math.max(r,g,b),mn=Math.min(r,g,b); const sc=(mx-mn)+(mx<60?-40:0)+(mn>200?-60:0); if(sc>bs){bs=sc;best=[r,g,b]} }
@@ -197,18 +206,18 @@ function loadLogo(team){
 
 /* ---------- ARAYÜZ ---------- */
 const $=id=>document.getElementById(id);
-let league=LEAGUES[0],teams=[],home,away,duration=30,tempo=7;
+let league=LEAGUES[0],teams=[],home,away,duration=30,tempo=9;
 function renderLeagueBar(){ $("leaguebar").innerHTML=LEAGUES.map(l=>`<button type="button" data-id="${l.id}" class="${l===league?"active":""}">${l.flag} ${l.n}</button>`).join("");
   $("leaguebar").querySelectorAll("button").forEach(b=>b.onclick=()=>{ league=LEAGUES.find(l=>l.id===b.dataset.id); renderLeagueBar(); selectLeague(); }); }
 async function selectLeague(){
   $("src").className="status"; $("src").innerHTML=`<span class="spin"></span> ${league.n}`; $("recBtn").disabled=$("playBtn").disabled=true;
-  try{ teams=await loadLeague(league); $("src").className="status ok"; $("src").textContent=`${teams.length} takım · ${dataSource==="canlı"?"canlı ESPN verisi":"yedek kadro verisi"}`; }
+  try{ teams=await loadLeague(league); await loadPack(league.id); $("src").className="status ok"; $("src").textContent=`${teams.length} takım · ${dataSource==="canlı"?"canlı ESPN verisi":"yedek kadro verisi"}`; }
   catch(e){ teams=[]; $("src").className="status err"; $("src").textContent="veri gelmedi, başka lig dene"; }
   if(!teams.length) return;
   [$("homeSel"),$("awaySel")].forEach(sel=>sel.innerHTML=teams.map((t,i)=>`<option value="${i}">${t.n}</option>`).join(""));
   $("homeSel").value=0; $("awaySel").value=Math.min(1,teams.length-1); updateTeams(); $("recBtn").disabled=$("playBtn").disabled=false;
 }
-function paintCrest(el,t){ const src=t.custom||t.logo;
+function paintCrest(el,t){ const src=logoSrc(t);
   el.innerHTML=src?`<img src="${src}" alt="${t.n} arması">`:""; if(!src) el.textContent=t.s;
   const im=el.querySelector("img"); if(im) im.onerror=()=>{ el.textContent=t.s; el.style.background=t.c; el.style.color="#fff"; };
   if(src){ el.style.background="#fff"; el.style.color="#0b1a07"; } }
@@ -233,6 +242,8 @@ const BAN={x:24,y:26,w:1032,h:292,r:28};
 const P={x:14,y:392,w:1052,h:1428};
 const IN=26, NETD=104, TOPL=P.y+NETD+14, BOTL=P.y+P.h-NETD-14, LEFT=P.x+IN, RIGHT=P.x+P.w-IN;
 const MOUTH=300, R=76;
+/* maç dengesi: kaleci boyu/hızı/şaşma payı ve topun kaleye yönelme gücü */
+const CFG={KW:96,KH:38,KSP:3.0,KERR:170,KRES:0.8,STEER:0.018};
 const DF='Anton,Impact,sans-serif', UF='"Barlow Condensed",sans-serif';
 const LEAD=1800, TAIL=4200, CELEB=1500;
 let game=null,raf=null,rec=null,chunks=[];
@@ -246,20 +257,48 @@ async function run(record){
   $("stage").scrollIntoView({behavior:"smooth",block:"start"});
   const [hImg,aImg]=await Promise.all([loadLogo(home),loadLogo(away)]);
   if(document.fonts&&document.fonts.ready){ try{ await document.fonts.ready }catch{} }
-  game={t0:performance.now(),last:performance.now(),min:0,sh:0,sa:0,record,hImg,aImg,speed:tempo*Math.pow(30/duration,0.7),
+  game={t0:performance.now(),last:performance.now(),min:0,sh:0,sa:0,record,hImg,aImg,speed:tempo*(30/duration),steer:CFG.STEER*(30/duration),ksp:CFG.KSP*(30/duration),
     title:($("title").value||"DERBİ").toUpperCase(),handle:$("handle").value,cta:$("cta").value,
     msPerMin:(duration*1000-LEAD-TAIL)/90,flash:null,parts:[],shake:0,celeb:0,ftAt:0,done:false,
+    saveFx:null,
     discs:[{team:"h",t:home,img:hImg,attack:-1,x:0,y:0,vx:0,vy:0,trail:[],spin:0,r:R},
-           {team:"a",t:away,img:aImg,attack:1,x:0,y:0,vx:0,vy:0,trail:[],spin:0,r:R}]};
+           {team:"a",t:away,img:aImg,attack:1,x:0,y:0,vx:0,vy:0,trail:[],spin:0,r:R}],
+    keepers:[{side:-1,x:W/2,err:0,ph:0},{side:1,x:W/2,err:0,ph:3.1}]};
   kickoff();
   if(record) startRecorder();
   cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
 }
 function kickoff(){
   const cx=W/2, cy=P.y+P.h/2;
-  game.discs.forEach((d,i)=>{ d.x=cx+(i?170:-170); d.y=cy+(i?150:-150); d.trail.length=0;
-    const a=(i? Math.PI/2 : -Math.PI/2)+(Math.random()-0.5)*1.4;
+  game.discs.forEach((d,i)=>{ d.x=cx+(i?190:-190); d.y=cy+(i?170:-170); d.trail.length=0;
+    /* santra vuruşu yana açılır: kaleye dik fırlayıp seri gol olmasın */
+    const a=(i?0:Math.PI)+(Math.random()-0.5)*1.1;
     d.vx=Math.cos(a)*game.speed; d.vy=Math.sin(a)*game.speed; d.inNet=false; });
+  game.keepers.forEach(k=>{ k.err=(Math.random()-0.5)*CFG.KERR; });
+}
+/* topun dikey saplanmasını engelle: her zaman yatay bileşen kalsın */
+function enforce(d,sp){
+  const min=0.18*sp;
+  if(Math.abs(d.vx)<min){ d.vx=(d.vx<0?-1:1)*min; const r=Math.max(0,sp*sp-d.vx*d.vx); d.vy=(d.vy<0?-1:1)*Math.sqrt(r); }
+}
+function stepKeepers(k,now){
+  game.keepers.forEach(kp=>{
+    const att=game.discs.find(d=>d.attack===kp.side);
+    const dist=kp.side<0?att.y-TOPL:BOTL-att.y;
+    const coming=kp.side<0?att.vy<0:att.vy>0;
+    let tx;
+    if(coming&&dist<640) tx=att.x+kp.err*(CFG.KRES+(1-CFG.KRES)*dist/640);
+    else { tx=W/2+Math.sin(now/760+kp.ph)*118; if(dist>700&&Math.random()<0.02*k) kp.err=(Math.random()-0.5)*CFG.KERR; }
+    tx=clamp(tx,W/2-MOUTH/2+CFG.KW/2-26,W/2+MOUTH/2-CFG.KW/2+26);
+    kp.x+=clamp(tx-kp.x,-game.ksp*k,game.ksp*k);
+  });
+}
+function blocked(d,side,now){
+  const kp=game.keepers.find(x=>x.side===side);
+  if(Math.abs(d.x-kp.x)>CFG.KW/2+d.r*0.5) return false;
+  d.vx+=(d.x-kp.x)*0.09+(Math.random()-0.5)*2; game.shake=Math.max(game.shake,9);
+  game.saveFx={x:clamp(kp.x,260,W-260),y:side<0?TOPL+120:BOTL-120,t:now};
+  return true;
 }
 function startRecorder(){
   chunks=[]; const stream=CV.captureStream(30);
@@ -312,16 +351,20 @@ function step(k,now){
   g.parts=g.parts.filter(p=>p.life>0);
   if(g.celeb>0){ g.celeb-=k*16.67; if(g.celeb<=0){ g.celeb=0; kickoff(); } return; }
   if(g.ftAt) return;
+  stepKeepers(k,now);
   const sp=g.speed*(1+Math.min(0.35,g.min/90*0.35));
   for(const d of g.discs){
+    /* rakip kaleye doğru yavaşça yönel: top sahada amaçsız dolaşmasın */
+    const gy=d.attack<0?TOPL:BOTL, want=Math.atan2(gy-d.y,W/2-d.x);
+    let ang=Math.atan2(d.vy,d.vx); const df=((want-ang+Math.PI*3)%(Math.PI*2))-Math.PI;
+    ang+=clamp(df,-g.steer*k,g.steer*k); d.vx=Math.cos(ang)*sp; d.vy=Math.sin(ang)*sp; enforce(d,sp);
     d.x+=d.vx*k; d.y+=d.vy*k; d.spin+=0.015*k;
     d.trail.push({x:d.x,y:d.y}); if(d.trail.length>14) d.trail.shift();
     const inMouth=Math.abs(d.x-W/2)<MOUTH/2-12;
     if(d.x-d.r<LEFT){ d.x=LEFT+d.r; d.vx=Math.abs(d.vx); jitter(d); }
     if(d.x+d.r>RIGHT){ d.x=RIGHT-d.r; d.vx=-Math.abs(d.vx); jitter(d); }
-    if(d.y-d.r<TOPL){ if(d.attack<0&&inMouth){ return score(d,now); } d.y=TOPL+d.r; d.vy=Math.abs(d.vy); jitter(d); }
-    if(d.y+d.r>BOTL){ if(d.attack>0&&inMouth){ return score(d,now); } d.y=BOTL-d.r; d.vy=-Math.abs(d.vy); jitter(d); }
-    const m=Math.hypot(d.vx,d.vy)||1; d.vx=d.vx/m*sp; d.vy=d.vy/m*sp;
+    if(d.y-d.r<TOPL){ if(d.attack<0&&inMouth&&!blocked(d,-1,now)) return score(d,now); d.y=TOPL+d.r; d.vy=Math.abs(d.vy); jitter(d); }
+    if(d.y+d.r>BOTL){ if(d.attack>0&&inMouth&&!blocked(d,1,now)) return score(d,now); d.y=BOTL-d.r; d.vy=-Math.abs(d.vy); jitter(d); }
   }
   // logo çarpışması
   const [a,b]=g.discs, dx=b.x-a.x, dy=b.y-a.y, dist=Math.hypot(dx,dy)||1;
@@ -404,6 +447,15 @@ function pitch(now){
     ctx.moveTo(W/2-MOUTH/2,dir>0?y-NETD:y+NETD); ctx.lineTo(W/2-MOUTH/2,y); ctx.moveTo(W/2+MOUTH/2,dir>0?y-NETD:y+NETD); ctx.lineTo(W/2+MOUTH/2,y); ctx.stroke(); ctx.restore();
     ctx.strokeStyle="rgba(255,255,255,.92)"; ctx.lineWidth=6;
   });
+  game.keepers.forEach(kp=>{ const t=kp.side<0?away:home, y=kp.side<0?TOPL-CFG.KH/2+3:BOTL+CFG.KH/2-3;
+    ctx.save(); ctx.shadowColor="rgba(0,0,0,.55)"; ctx.shadowBlur=14; ctx.shadowOffsetY=5;
+    rr(kp.x-CFG.KW/2,y-CFG.KH/2,CFG.KW,CFG.KH,CFG.KH/2); ctx.fillStyle=t.col||t.c; ctx.fill(); ctx.restore();
+    rr(kp.x-CFG.KW/2,y-CFG.KH/2,CFG.KW,CFG.KH,CFG.KH/2); ctx.lineWidth=5; ctx.strokeStyle="#fff"; ctx.stroke();
+    ctx.fillStyle="#fff"; [-1,1].forEach(sx=>{ ctx.beginPath(); ctx.arc(kp.x+sx*(CFG.KW/2-13),y,8,0,Math.PI*2); ctx.fill(); }); });
+  const sv=game.saveFx;
+  if(sv&&performance.now()-sv.t<750){ const p=(performance.now()-sv.t)/750;
+    ctx.save(); ctx.globalAlpha=1-p; ctx.textAlign="center"; ctx.lineWidth=9; ctx.strokeStyle="#070d08"; ctx.fillStyle="#fff";
+    ctx.font=`${62+p*22}px ${DF}`; ctx.strokeText("KURTARIŞ",sv.x,sv.y); ctx.fillText("KURTARIŞ",sv.x,sv.y); ctx.restore(); }
   ctx.textAlign="center"; ctx.fillStyle="rgba(255,255,255,.22)"; ctx.font=`86px ${DF}`;
   ctx.fillText(game.handle.replace("@","").toUpperCase(),W/2,P.y+P.h/2-170);
   // izler + diskler
