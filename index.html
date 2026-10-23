@@ -236,6 +236,9 @@ const MOUTH=300, R=76;
 const DF='Anton,Impact,sans-serif', UF='"Barlow Condensed",sans-serif';
 const LEAD=1800, TAIL=4200, CELEB=1500;
 let game=null,raf=null,rec=null,chunks=[];
+/* claude.ai Artifact ortamında indirme izni; yerelde null kalır ve normal link çalışır */
+let dlCap=null;
+if(window.claude&&typeof claude.use==="function") claude.use("downloads").then(d=>{dlCap=d}).catch(()=>{});
 
 async function run(record){
   $("setup").classList.add("hidden"); ["stage","stageBtns"].forEach(i=>$(i).classList.remove("hidden")); $("out").classList.add("hidden");
@@ -277,6 +280,12 @@ function showOutput(blob,mime){
   const canShare=navigator.canShare&&navigator.canShare({files:[file]});
   $("shareBtn").classList.toggle("hidden",!canShare);
   $("shareBtn").onclick=()=>navigator.share({files:[file],title:"Logo Derbisi"}).catch(()=>{});
+  $("dlBtn").onclick=async e=>{
+    if(!dlCap) return;
+    e.preventDefault();
+    try{ await dlCap.save({filename:file.name,data:blob}); $("outNote").textContent="Video kaydedildi. Galeriden Instagram'a yükleyebilirsin."; }
+    catch(err){ if(err&&err.code==="declined") return; $("outNote").textContent="Kaydedilemedi: "+((err&&err.message)||"bu ortam indirmeye izin vermedi"); }
+  };
   $("outNote").textContent= canShare ? "Gönder'e bas, listeden Instagram'ı seç; Reels ya da Story olarak yükle."
     : ext==="webm" ? "Bu tarayıcı WEBM üretti; Instagram MP4 ister. Videoyu indirip dönüştür ya da iPhone Safari / Android Chrome'dan üret, orada doğrudan paylaşabilirsin."
     : "İndir'e bas, galeriye kaydet, Instagram'dan yükle.";
