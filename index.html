@@ -43,7 +43,7 @@
   .side{display:flex;flex-direction:column;gap:8px;align-items:center;min-width:0}
   .crest{width:84px;height:84px;border-radius:50%;background:#fff;display:grid;place-items:center;overflow:hidden;border:3px solid #ffffff22;box-shadow:0 8px 22px #0008;font-family:var(--display);font-size:24px;color:#0b1a07}
   .crest img{width:78%;height:78%;object-fit:contain}
-  select,input[type=text]{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-family:var(--ui);font-size:15px;font-weight:600}
+  select,input[type=text],input[type=number]{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-family:var(--ui);font-size:15px;font-weight:600}
   select:focus-visible,input:focus-visible,button:focus-visible,label.upl:focus-within{outline:2px solid var(--neon);outline-offset:2px}
   .meta{font-size:13px;color:var(--muted);text-align:center;line-height:1.3;font-variant-numeric:tabular-nums}
   .vs{font-family:var(--display);color:var(--neon);font-size:22px;padding-top:28px}
@@ -51,6 +51,7 @@
   .upl input{display:none}
   .ghost{background:none;border:1px solid var(--line);color:var(--neon);border-radius:999px;padding:5px 12px;font-family:var(--ui);font-size:13px;font-weight:600;cursor:pointer}
 
+  .scorepick{display:flex;align-items:center;gap:8px}.scorepick input{text-align:center;font-size:20px;padding:6px}.scorepick b{color:var(--text);font-size:20px}
   .fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   label.f{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600}
   .seg{display:flex;gap:5px}
@@ -128,6 +129,15 @@
       <label class="f">Alt yazı <input type="text" id="cta" value="Sence kim kazanır? Yoruma yaz 👇" maxlength="42"></label>
       <label class="f">Ses
         <div class="seg" id="sndSeg"><button type="button" data-v="1" class="active">Açık</button><button type="button" data-v="0">Kapalı</button></div>
+      </label>
+    </div>
+
+    <div class="fields">
+      <label class="f">Skor
+        <div class="seg" id="scoreSeg"><button type="button" data-v="0" class="active">Fizik</button><button type="button" data-v="1">Ben seçerim</button></div>
+      </label>
+      <label class="f hidden" id="scorePick">Maç sonucu (ev – deplasman)
+        <span class="scorepick"><input type="number" id="goalH" min="0" max="9" value="3" aria-label="Ev sahibi gol"><b>–</b><input type="number" id="goalA" min="0" max="9" value="2" aria-label="Deplasman gol"></span>
       </label>
     </div>
 
@@ -223,7 +233,7 @@ function loadLogo(team){
 
 /* ---------- ARAYÜZ ---------- */
 const $=id=>document.getElementById(id);
-let league=LEAGUES[0],teams=[],home,away,duration=30,tempo=17;
+let league=LEAGUES[0],teams=[],home,away,duration=30,tempo=17,fixScore=false;
 function renderLeagueBar(){ $("leaguebar").innerHTML=LEAGUES.map(l=>`<button type="button" data-id="${l.id}" class="${l===league?"active":""}">${l.flag} ${l.n}</button>`).join("");
   $("leaguebar").querySelectorAll("button").forEach(b=>b.onclick=()=>{ league=LEAGUES.find(l=>l.id===b.dataset.id); renderLeagueBar(); selectLeague(); }); }
 async function selectLeague(){
@@ -249,9 +259,9 @@ $("rndBtn").onclick=()=>{ if(!teams.length) return; const a=Math.floor(Math.rand
 $("durSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ duration=+b.dataset.v; $("durSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); });
 $("sndSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ sound=b.dataset.v==="1";
   $("sndSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); if(sound) audioOn(); else audioOff(); });
-$("tmpSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ tempo=+b.dataset.v; $("sndSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ sound=b.dataset.v==="1";
-  $("sndSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); if(sound) audioOn(); else audioOff(); });
-$("tmpSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); });
+$("tmpSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ tempo=+b.dataset.v; $("tmpSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); });
+$("scoreSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ fixScore=b.dataset.v==="1";
+  $("scoreSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); $("scorePick").classList.toggle("hidden",!fixScore); });
 /* ses motoru kullanıcı dokunuşuyla açılmalı: butonun kendisinde başlat */
 $("recBtn").onclick=()=>{ audioOn(); run(true); }; $("playBtn").onclick=()=>{ audioOn(); run(false); };
 document.addEventListener("pointerdown",()=>{ if(AC&&AC.state==="suspended") AC.resume(); },{passive:true});
@@ -333,10 +343,11 @@ async function run(record){
   game={t0:performance.now(),last:performance.now(),min:0,sh:0,sa:0,record,hImg,aImg,vmax:tempo*(30/duration),ksp:CFG.KSP*(tempo/17)*(30/duration),
     title:($("title").value||"DERBİ").toUpperCase(),handle:$("handle").value,cta:$("cta").value,
     msPerMin:(duration*1000-LEAD-TAIL)/90,flash:null,parts:[],shake:0,celeb:0,ftAt:0,done:false,
-    saveFx:null,
+    saveFx:null,plan:makePlan(),log:[],
     discs:[{team:"h",t:home,img:hImg,attack:-1,x:0,y:0,vx:0,vy:0,trail:[],rot:0,sq:0,sqa:0,r:R},
            {team:"a",t:away,img:aImg,attack:1,x:0,y:0,vx:0,vy:0,trail:[],rot:Math.PI,sq:0,sqa:0,r:R}],
     keepers:[{side:-1,x:W/2,err:0,ph:0},{side:1,x:W/2,err:0,ph:3.1}]};
+  game.celebMs=game.plan?clamp(game.msPerMin*90*0.4/Math.max(1,game.plan.q.length),450,CELEB):CELEB;
   kickoff();
   audioOn();
   if(record) startRecorder();
@@ -346,9 +357,29 @@ function kickoff(){
   const cx=W/2, cy=P.y+P.h/2;
   game.discs.forEach((d,i)=>{ d.x=cx+(i?190:-190); d.y=cy+(i?170:-170); d.trail.length=0;
     /* santra vuruşu yana açılır: kaleye dik fırlayıp seri gol olmasın */
-    const a=(i?0:Math.PI)+(Math.random()-0.5)*1.1, v=game.vmax*0.8;
+    /* seçili skorda golü geciken takım santrayı doğrudan hücuma açar */
+    const late=game.plan&&goalOpen(d)&&game.min-game.plan.at[game.plan.i]>=2;
+    const a=(late?d.attack*Math.PI/2:(i?0:Math.PI))+(Math.random()-0.5)*1.1, v=game.vmax*0.8;
     d.vx=Math.cos(a)*v; d.vy=Math.sin(a)*v; d.inNet=false; });
   game.keepers.forEach(k=>{ k.err=(Math.random()-0.5)*CFG.KERR; });
+}
+/* seçilen skor: goller dakikalara yayılır; sıradaki golü yalnız sırası gelen takım, o dakikadan sonra atabilir */
+function makePlan(){
+  if(!fixScore) return null;
+  const n=v=>clamp(Math.round(+v||0),0,9), q=[...Array(n($("goalH").value)).fill("h"),...Array(n($("goalA").value)).fill("a")];
+  for(let i=q.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [q[i],q[j]]=[q[j],q[i]]; }
+  const slot=76/Math.max(1,q.length);
+  return {q,at:q.map((_,i)=>Math.round(3+slot*(i+0.1+Math.random()*0.4))),i:0};
+}
+function goalOpen(d){ const p=game.plan; return !p||(p.i<p.q.length&&p.q[p.i]===d.team&&game.min>=p.at[p.i]); }
+function planDone(){ const p=game.plan; return !p||p.i>=p.q.length; }
+/* hücum: kaleye yönelen top, kalecinin boş bıraktığı köşeye doğru kıvrılır (şut) */
+function aim(d,k,turn,range,any){
+  const gl=d.attack<0?TOPL:BOTL;
+  if(Math.abs(d.y-gl)>range||(!any&&Math.sign(d.vy)!==d.attack)) return;
+  const kp=game.keepers.find(x=>x.side===d.attack), tx=W/2+(kp.x>W/2?-1:1)*125;
+  const cur=Math.atan2(d.vy,d.vx), da=Math.atan2(gl-d.y,tx-d.x)-cur, a=cur+clamp(Math.atan2(Math.sin(da),Math.cos(da)),-turn*k,turn*k);
+  const s=Math.hypot(d.vx,d.vy); d.vx=Math.cos(a)*s; d.vy=Math.sin(a)*s;
 }
 /* çarpma: ezilme, toz ve ses. nx,ny = çarpışma normali (topun itildiği yön) */
 function bump(d,nx,ny,power){
@@ -389,11 +420,13 @@ function stepKeepers(k,now){
     const att=game.discs.find(d=>d.attack===kp.side);
     const dist=kp.side<0?att.y-TOPL:BOTL-att.y;
     const coming=kp.side<0?att.vy<0:att.vy>0;
+    /* seçili skorda: sırası gelen golde kaleci yanlış köşeye yatar, sırası olmayan şutta hatasız ve hızlıdır */
+    const open=game.plan?goalOpen(att):null, sp=open===true?0.45:open===false?2.2:1;
     let tx;
-    if(coming&&dist<640) tx=att.x+kp.err*(CFG.KRES+(1-CFG.KRES)*dist/640);
+    if(coming&&dist<640) tx=open===true?W/2+(kp.x>=W/2?1:-1)*150:open===false?att.x:att.x+kp.err*(CFG.KRES+(1-CFG.KRES)*dist/640);
     else { tx=W/2+Math.sin(now/760+kp.ph)*118; if(dist>700&&Math.random()<0.02*k) kp.err=(Math.random()-0.5)*CFG.KERR; }
     tx=clamp(tx,W/2-MOUTH/2+CFG.KW/2-26,W/2+MOUTH/2-CFG.KW/2+26);
-    const px=kp.x; kp.x+=clamp(tx-kp.x,-game.ksp*k,game.ksp*k); kp.vx=(kp.x-px)/Math.max(0.2,k);
+    const px=kp.x; kp.x+=clamp(tx-kp.x,-game.ksp*sp*k,game.ksp*sp*k); kp.vx=(kp.x-px)/Math.max(0.2,k);
   });
 }
 /* kaleci çarpışması: top gerçekten kaleciye çarpar ve seker */
@@ -401,11 +434,14 @@ function keeperHit(d,now){
   const kp=game.keepers.find(x=>x.side===d.attack); if(!kp) return false;
   const y=kp.side<0?TOPL-CFG.KH/2+3:BOTL+CFG.KH/2-3;
   if(!hitRect(d,kp.x,y,CFG.KW,CFG.KH,CFG.REST,kp.vx||0)) return false;
-  /* kurtarış = uzun açılış: top karşı yarıya uçar, maç sahaya yayılır */
+  save(d,kp,now);
+  return true;
+}
+/* kurtarış = uzun açılış: top karşı yarıya uçar, maç sahaya yayılır */
+function save(d,kp,now){
   clearUpfield(d);
   game.shake=Math.max(game.shake,9); ohh();
   game.saveFx={x:clamp(kp.x,260,W-260),y:kp.side<0?TOPL+120:BOTL-120,t:now};
-  return true;
 }
 function startRecorder(){
   chunks=[]; const stream=CV.captureStream(30);
@@ -471,10 +507,11 @@ function loop(now){
   if(!game||game.done) return;
   const dt=Math.min(50,now-game.last); game.last=now; const k=dt/16.67, el=now-game.t0, matchMs=el-LEAD;
   if(matchMs>0 && !game.kickW){ game.kickW=1; whistle(0,0.45); }
-  if(matchMs>0 && game.min<90){
+  if(matchMs>0 && !game.ftAt){
     const target=Math.min(90,Math.floor(matchMs/game.msPerMin)+1);
     while(game.min<target){ game.min++; if(game.min===46&&!game.celeb) game.flash={text:"2. YARI",sub:"",t:now,dur:1300,big:false,col:"#b6ff3b"}; }
-    if(game.min>=90&&!game.ftAt){ game.ftAt=now; game.flash=null; game.celeb=0; whistle(0,0.25); whistle(0.32,0.25); whistle(0.64,0.8); }
+    /* seçili skora ulaşılmadıysa uzatma: düdük son gol ve sevinçten sonra */
+    if(game.min>=90&&!game.ftAt&&planDone()&&(!game.plan||!game.celeb)){ game.ftAt=now; game.flash=null; game.celeb=0; whistle(0,0.25); whistle(0.32,0.25); whistle(0.64,0.8); }
   }
   step(k,now); draw(now,el);
   if(game.ftAt && now-game.ftAt>TAIL-700 && !game.offFaded){ game.offFaded=1; audioOff(); }
@@ -492,6 +529,8 @@ function step(k,now){
   stepKeepers(k,now);
   for(const d of g.discs){
     /* enerji korunur: hız sabit, yön çarpışmalarla değişir (bilardo fiziği) */
+    if(!g.plan) aim(d,k,0.009*g.vmax/17,620);
+    else if(goalOpen(d)){ const late=Math.max(0,g.min-g.plan.at[g.plan.i]); aim(d,k,(0.035+0.015*late)*g.vmax/17,700+150*late,late>=3); }
     const v=Math.hypot(d.vx,d.vy)||1; d.vx=d.vx/v*g.vmax; d.vy=d.vy/v*g.vmax;
     d.x+=d.vx*k; d.y+=d.vy*k;
     d.rot+=(d.vx/d.r)*0.62*k;                 /* yuvarlanma: hıza bağlı dönüş */
@@ -505,8 +544,11 @@ function step(k,now){
       bump(d,nx,(d.y-gl)/(Math.hypot(d.x-px,d.y-gl)||1),0.5); }
     keeperHit(d,now);
     const inMouth=Math.abs(d.x-W/2)<MOUTH/2-CFG.PR;
-    if(d.attack<0&&inMouth&&d.y<TOPL) return score(d,now);
-    if(d.attack>0&&inMouth&&d.y>BOTL) return score(d,now);
+    if(inMouth&&(d.attack<0?d.y<TOPL:d.y>BOTL)){
+      if(goalOpen(d)) return score(d,now);
+      /* sırası olmayan gol çizgide kurtarılır */
+      const kp=g.keepers.find(x=>x.side===d.attack); kp.x=clamp(d.x,W/2-MOUTH/2+CFG.KW/2,W/2+MOUTH/2-CFG.KW/2); d.y=gl+d.attack*-d.r; save(d,kp,now);
+    }
     /* kale ağzı açık, kalan her yer duvar */
     if(d.y-d.r<TOPL&&!(d.attack<0&&inMouth)){ d.y=TOPL+d.r; d.vy=Math.abs(d.vy); bump(d,0,1,0.26); }
     if(d.y+d.r>BOTL&&!(d.attack>0&&inMouth)){ d.y=BOTL-d.r; d.vy=-Math.abs(d.vy); bump(d,0,-1,0.26); }
@@ -521,9 +563,10 @@ function step(k,now){
 function jitter(d,amt){ const a=Math.atan2(d.vy,d.vx)+(Math.random()-0.5)*(amt||0.26), s=Math.hypot(d.vx,d.vy); d.vx=Math.cos(a)*s; d.vy=Math.sin(a)*s; }
 function score(d,now){
   const g=game; if(d.team==="h") g.sh++; else g.sa++;
+  if(g.plan) g.plan.i++; g.log.push(d.team+(g.min||1));
   d.y=d.attack<0?TOPL-40:BOTL+40; d.vx=d.vy=0; d.inNet=true;
-  g.celeb=CELEB; g.shake=26; roar();
-  g.flash={text:"GOOOL!",sub:`${d.t.n} · ${game.min||1}'`,t:now,dur:CELEB,big:true,col:d.t.col||d.t.c};
+  g.celeb=g.celebMs; g.shake=26; roar();
+  g.flash={text:"GOOOL!",sub:`${d.t.n} · ${game.min||1}'`,t:now,dur:g.celebMs,big:true,col:d.t.col||d.t.c};
   for(let i=0;i<90;i++){ const a=Math.random()*Math.PI*2, s=4+Math.random()*16;
     g.parts.push({x:d.x,y:d.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-6,life:40+Math.random()*50,col:Math.random()<0.5?(d.t.col||d.t.c):"#b6ff3b",sz:5+Math.random()*9}); }
 }
@@ -566,7 +609,7 @@ function banner(){
   ctx.textAlign="center";
   ctx.beginPath(); ctx.moveTo(W/2-118,b.y+b.h-6); ctx.lineTo(W/2+118,b.y+b.h-6); ctx.lineTo(W/2+92,b.y+b.h+54); ctx.lineTo(W/2-92,b.y+b.h+54); ctx.closePath();
   ctx.fillStyle="#b6ff3b"; ctx.fill();
-  ctx.fillStyle="#0b1a07"; ctx.font=`44px ${DF}`; ctx.fillText(game.min>=90?"MS":(game.min||1)+"'",W/2,b.y+b.h+42);
+  ctx.fillStyle="#0b1a07"; ctx.font=`44px ${DF}`; ctx.fillText(game.ftAt?"MS":game.min>=90?"90+'":(game.min||1)+"'",W/2,b.y+b.h+42);
 }
 function pitch(now){
   ctx.save(); rr(P.x,P.y,P.w,P.h,20); ctx.clip();
