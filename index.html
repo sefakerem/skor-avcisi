@@ -62,6 +62,9 @@
   .btn:disabled{opacity:.35;cursor:not-allowed}
   .btn.alt{background:var(--panel2);color:var(--text);border:1px solid var(--line);flex:0 0 130px}
   a.btn{display:grid;place-items:center;text-decoration:none}
+  .sharerow{display:flex;flex-wrap:wrap;gap:8px}
+  .sbtn{flex:1 1 30%;min-width:96px;padding:10px 8px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-family:var(--ui);font-size:15px;font-weight:600;text-align:center;text-decoration:none;cursor:pointer}
+  .sbtn:hover{border-color:var(--neon)}
 
   .stage{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#000}
   canvas{display:block;width:100%;height:auto}
@@ -148,6 +151,15 @@
       <a class="btn alt" id="dlBtn" download="logo-derbisi.mp4">İndir</a>
     </div>
     <p class="note" id="outNote"></p>
+    <div class="cardhead" style="margin-top:4px"><h2>Paylaş</h2><span class="status" id="shareStatus"></span></div>
+    <div class="sharerow" id="shareRow">
+      <button type="button" class="sbtn hidden" id="shNative">Paylaş…</button>
+      <a class="sbtn" id="shWa" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+      <a class="sbtn" id="shX" target="_blank" rel="noopener noreferrer">X</a>
+      <a class="sbtn" id="shFb" target="_blank" rel="noopener noreferrer">Facebook</a>
+      <button type="button" class="sbtn" id="shCopy">Bağlantıyı kopyala</button>
+    </div>
+    <input type="text" class="hidden" id="shText" readonly aria-label="Paylaşım metni">
     <button class="btn alt" id="againBtn" style="flex:1">Yeni maç</button>
   </section>
 
@@ -421,10 +433,38 @@ function showOutput(blob,mime){
     try{ await dlCap.save({filename:file.name,data:blob}); $("outNote").textContent="Video kaydedildi. Galeriden Instagram'a yükleyebilirsin."; }
     catch(err){ if(err&&err.code==="declined") return; $("outNote").textContent="Kaydedilemedi: "+((err&&err.message)||"bu ortam indirmeye izin vermedi"); }
   };
+  setupShare(canShare);
   $("outNote").textContent= canShare ? "Gönder'e bas, listeden Instagram'ı seç; Reels ya da Story olarak yükle."
     : ext==="webm" ? "Bu tarayıcı WEBM üretti; Instagram MP4 ister. Videoyu indirip dönüştür ya da iPhone Safari / Android Chrome'dan üret, orada doğrudan paylaşabilirsin."
     : "İndir'e bas, galeriye kaydet, Instagram'dan yükle.";
   ["stage","stageBtns"].forEach(i=>$(i).classList.add("hidden")); $("out").classList.remove("hidden"); $("out").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+/* İndirmeye bağlı olmayan paylaşım: metin + bağlantı. Artifact içinde sayfanın kendi adresi
+   sandbox adresi olduğu için yayındaki artifact bağlantısı paylaşılır. */
+const ARTIFACT_URL="https://claude.ai/artifact/8uMM271FUxVBaVRUZEZT42";
+function shareUrl(){ return (!window.claude&&/^https?:/.test(location.protocol))? location.href.split(/[?#]/)[0] : ARTIFACT_URL; }
+function setupShare(fileShare){
+  const url=shareUrl(), h=$("handle").value.trim();
+  const text=`${home.n} ${game.sh}-${game.sa} ${away.n} ⚽ Logo Derbisi'nde maç bitti!${h?" "+h:""} Sen de kendi derbini oynat:`;
+  const full=`${text} ${url}`;
+  $("shWa").href="https://wa.me/?text="+encodeURIComponent(full);
+  $("shX").href="https://twitter.com/intent/tweet?text="+encodeURIComponent(text)+"&url="+encodeURIComponent(url);
+  $("shFb").href="https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(url);
+  const canLink=!!navigator.share;
+  $("shNative").classList.toggle("hidden",!canLink);
+  $("shNative").onclick=()=>navigator.share({title:"Logo Derbisi",text,url}).catch(()=>{});
+  $("shText").value=full; $("shText").classList.add("hidden");
+  $("shareStatus").textContent=fileShare?"":"video dosyası bu ekrandan gönderilemiyor, bağlantı paylaşılır";
+  $("shCopy").onclick=async()=>{
+    let ok=false;
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText){ await navigator.clipboard.writeText(full); ok=true; } }catch{}
+    if(!ok){ const t=$("shText"); t.classList.remove("hidden"); t.focus(); t.select();
+      try{ ok=document.execCommand("copy"); }catch{ ok=false; } }
+    $("shCopy").textContent= ok?"Kopyalandı ✓":"Aşağıdan seçip kopyala";
+    if(ok) $("shText").classList.add("hidden");
+    setTimeout(()=>{ $("shCopy").textContent="Bağlantıyı kopyala"; },2200);
+  };
 }
 
 function loop(now){
