@@ -87,104 +87,109 @@
 <div class="app">
   <header class="masthead">
     <div class="wordmark">LOGO <em>DERBİSİ</em></div>
-    <p class="tagline">İki kulüp logosu sahada seker, rakibin kalesine giren gol atar. 90 dakika, dikey video, Reels'e hazır.</p>
+    <p class="tagline" data-i18n="tagline">İki kulüp logosu sahada seker, rakibin kalesine giren gol atar. 90 dakika, dikey video, Reels'e hazır.</p>
   </header>
 
   <section class="card" id="setup">
-    <div class="cardhead"><h2>Lig</h2><span class="status" id="src"><span class="spin"></span> yükleniyor</span></div>
+    <div class="cardhead"><h2 data-i18n="league">Lig</h2><span class="status" id="src"><span class="spin"></span> <span data-i18n="loading">yükleniyor</span></span></div>
     <div class="leaguebar" id="leaguebar"></div>
 
-    <div class="cardhead"><h2>Eşleşme</h2><button class="ghost" id="rndBtn">Rastgele</button></div>
+    <div class="cardhead"><h2 data-i18n="matchup">Eşleşme</h2><button class="ghost" id="rndBtn" data-i18n="random">Rastgele</button></div>
     <div class="matchup">
       <div class="side">
         <div class="crest" id="homeCrest"></div>
         <select id="homeSel" aria-label="Ev sahibi takım"></select>
         <div class="meta" id="homeStr"></div>
-        <label class="upl" tabindex="0">Logo yükle<input type="file" id="homeFile" accept="image/*"></label>
+        <label class="upl" tabindex="0"><span data-i18n="upload">Logo yükle</span><input type="file" id="homeFile" accept="image/*"></label>
       </div>
       <div class="vs">VS</div>
       <div class="side">
         <div class="crest" id="awayCrest"></div>
         <select id="awaySel" aria-label="Deplasman takımı"></select>
         <div class="meta" id="awayStr"></div>
-        <label class="upl" tabindex="0">Logo yükle<input type="file" id="awayFile" accept="image/*"></label>
+        <label class="upl" tabindex="0"><span data-i18n="upload">Logo yükle</span><input type="file" id="awayFile" accept="image/*"></label>
       </div>
     </div>
-    <p class="note hidden" id="logoNote">Logolar bu ortamda dışarıdan yüklenemedi — armalar takım renkleriyle çizildi. İstersen her takım için kendi logo dosyanı yükle.</p>
+    <p class="note hidden" id="logoNote" data-i18n="logoNote">Logolar bu ortamda dışarıdan yüklenemedi — armalar takım renkleriyle çizildi. İstersen her takım için kendi logo dosyanı yükle.</p>
 
     <div class="cardhead" style="margin-top:4px"><h2>Video</h2></div>
     <div class="fields">
-      <label class="f">Süre
+      <label class="f">Dil / Language
+        <div class="seg" id="langSeg"><button type="button" data-v="tr" class="active">Türkçe</button><button type="button" data-v="en">English</button></div>
+      </label>
+    </div>
+    <div class="fields">
+      <label class="f"><span data-i18n="length">Süre</span>
         <div class="seg" id="durSeg"><button type="button" data-v="15">15s</button><button type="button" data-v="30" class="active">30s</button><button type="button" data-v="45">45s</button><button type="button" data-v="60">60s</button></div>
       </label>
-      <label class="f">Tempo
-        <div class="seg" id="tmpSeg"><button type="button" data-v="12">Sakin</button><button type="button" data-v="17" class="active">Normal</button><button type="button" data-v="22">Çılgın</button></div>
+      <label class="f"><span data-i18n="tempo">Tempo</span>
+        <div class="seg" id="tmpSeg"><button type="button" data-v="12" data-i18n="calm">Sakin</button><button type="button" data-v="17" class="active">Normal</button><button type="button" data-v="22" data-i18n="crazy">Çılgın</button></div>
       </label>
     </div>
     <div class="fields">
-      <label class="f">Üst başlık <input type="text" id="title" value="DERBİ" maxlength="18"></label>
-      <label class="f">Kullanıcı adı <input type="text" id="handle" value="@logoderbisi" maxlength="24"></label>
+      <label class="f"><span data-i18n="titleL">Üst başlık</span> <input type="text" id="title" value="DERBİ" maxlength="18"></label>
+      <label class="f"><span data-i18n="handleL">Kullanıcı adı</span> <input type="text" id="handle" value="@logoderbisi" maxlength="24"></label>
     </div>
     <div class="fields">
-      <label class="f">Alt yazı <input type="text" id="cta" value="Sence kim kazanır? Yoruma yaz 👇" maxlength="42"></label>
-      <label class="f">Ses
-        <div class="seg" id="sndSeg"><button type="button" data-v="1" class="active">Açık</button><button type="button" data-v="0">Kapalı</button></div>
+      <label class="f"><span data-i18n="ctaL">Alt yazı</span> <input type="text" id="cta" value="Sence kim kazanır? Yoruma yaz 👇" maxlength="42"></label>
+      <label class="f"><span data-i18n="sound">Ses</span>
+        <div class="seg" id="sndSeg"><button type="button" data-v="1" class="active" data-i18n="on">Açık</button><button type="button" data-v="0" data-i18n="off">Kapalı</button></div>
       </label>
     </div>
 
     <div class="fields">
-      <label class="f">Skor
-        <div class="seg" id="scoreSeg"><button type="button" data-v="0" class="active">Fizik</button><button type="button" data-v="1">Ben seçerim</button></div>
+      <label class="f"><span data-i18n="score">Skor</span>
+        <div class="seg" id="scoreSeg"><button type="button" data-v="0" class="active" data-i18n="physics">Fizik</button><button type="button" data-v="1" data-i18n="pick">Ben seçerim</button></div>
       </label>
-      <label class="f hidden" id="scorePick">Maç sonucu (ev – deplasman)
+      <label class="f hidden" id="scorePick"><span data-i18n="result">Maç sonucu (ev – deplasman)</span>
         <span class="scorepick"><input type="number" id="goalH" min="0" max="9" value="3" aria-label="Ev sahibi gol"><b>–</b><input type="number" id="goalA" min="0" max="9" value="2" aria-label="Deplasman gol"></span>
       </label>
     </div>
 
     <div class="actions">
-      <button class="btn" id="recBtn" disabled>Videoyu üret</button>
-      <button class="btn alt" id="playBtn" disabled>Önizle</button>
+      <button class="btn" id="recBtn" disabled data-i18n="make">Videoyu üret</button>
+      <button class="btn alt" id="playBtn" disabled data-i18n="preview">Önizle</button>
     </div>
   </section>
 
   <section class="stage hidden" id="stage">
     <canvas id="cv" width="1080" height="1920"></canvas>
-    <div class="rec" id="recTag"><i></i> KAYIT</div>
+    <div class="rec" id="recTag"><i></i> <span data-i18n="rec">KAYIT</span></div>
   </section>
-  <div class="actions hidden" id="stageBtns"><button class="btn alt" id="stopBtn" style="flex:1">Durdur</button></div>
+  <div class="actions hidden" id="stageBtns"><button class="btn alt" id="stopBtn" style="flex:1" data-i18n="stop">Durdur</button></div>
 
   <section class="card hidden" id="out">
-    <div class="cardhead"><h2>Video hazır</h2><span class="status ok" id="outInfo"></span></div>
+    <div class="cardhead"><h2 data-i18n="ready">Video hazır</h2><span class="status ok" id="outInfo"></span></div>
     <video id="preview" controls playsinline></video>
     <div class="actions">
-      <button class="btn" id="shareBtn">Instagram'a gönder</button>
-      <a class="btn alt" id="dlBtn" download="logo-derbisi.mp4">İndir</a>
+      <button class="btn" id="shareBtn" data-i18n="toIg">Instagram'a gönder</button>
+      <a class="btn alt" id="dlBtn" download="logo-derbisi.mp4" data-i18n="download">İndir</a>
     </div>
     <p class="note" id="outNote"></p>
-    <div class="cardhead" style="margin-top:4px"><h2>Paylaş</h2><span class="status" id="shareStatus"></span></div>
+    <div class="cardhead" style="margin-top:4px"><h2 data-i18n="share">Paylaş</h2><span class="status" id="shareStatus"></span></div>
     <div class="sharerow" id="shareRow">
-      <button type="button" class="sbtn hidden" id="shNative">Paylaş…</button>
+      <button type="button" class="sbtn hidden" id="shNative" data-i18n="shareDots">Paylaş…</button>
       <a class="sbtn" id="shWa" target="_blank" rel="noopener noreferrer">WhatsApp</a>
       <a class="sbtn" id="shX" target="_blank" rel="noopener noreferrer">X</a>
       <a class="sbtn" id="shFb" target="_blank" rel="noopener noreferrer">Facebook</a>
-      <button type="button" class="sbtn" id="shCopy">Bağlantıyı kopyala</button>
+      <button type="button" class="sbtn" id="shCopy" data-i18n="copy">Bağlantıyı kopyala</button>
     </div>
     <input type="text" class="hidden" id="shText" readonly aria-label="Paylaşım metni">
-    <button class="btn alt" id="againBtn" style="flex:1">Yeni maç</button>
+    <button class="btn alt" id="againBtn" style="flex:1" data-i18n="again">Yeni maç</button>
   </section>
 
-  <footer>Takım verileri ve armalar: ESPN herkese açık API · 1080×1920 dikey · Reels ve Story ölçüsü</footer>
+  <footer data-i18n="footer">Takım verileri ve armalar: ESPN herkese açık API · 1080×1920 dikey · Reels ve Story ölçüsü</footer>
 </div>
 
 <script src="teams-data.js"></script>
 <script>
 /* ---------- LİGLER / VERİ ---------- */
 const LEAGUES=[
-  {id:"tur.1",n:"Süper Lig",flag:"🇹🇷",coef:1.0},{id:"eng.1",n:"Premier League",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",coef:1.12},{id:"esp.1",n:"La Liga",flag:"🇪🇸",coef:1.1},
+  {id:"tur.1",n:"Süper Lig",en:"Super Lig",flag:"🇹🇷",coef:1.0},{id:"eng.1",n:"Premier League",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",coef:1.12},{id:"esp.1",n:"La Liga",flag:"🇪🇸",coef:1.1},
   {id:"ger.1",n:"Bundesliga",flag:"🇩🇪",coef:1.08},{id:"ita.1",n:"Serie A",flag:"🇮🇹",coef:1.08},{id:"fra.1",n:"Ligue 1",flag:"🇫🇷",coef:1.05},
-  {id:"uefa.champions",n:"Şampiyonlar Ligi",flag:"🏆",coef:1.15},{id:"uefa.europa",n:"Avrupa Ligi",flag:"🥈",coef:1.05},{id:"uefa.europa.conf",n:"Konferans Ligi",flag:"🥉",coef:0.98},
-  {id:"ned.1",n:"Eredivisie",flag:"🇳🇱",coef:1.0},{id:"por.1",n:"Portekiz",flag:"🇵🇹",coef:1.0},{id:"bel.1",n:"Belçika",flag:"🇧🇪",coef:0.97},{id:"sco.1",n:"İskoçya",flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",coef:0.95},
-  {id:"bra.1",n:"Brezilya",flag:"🇧🇷",coef:1.0},{id:"arg.1",n:"Arjantin",flag:"🇦🇷",coef:0.98},{id:"usa.1",n:"MLS",flag:"🇺🇸",coef:0.95},{id:"mex.1",n:"Meksika",flag:"🇲🇽",coef:0.95},
+  {id:"uefa.champions",n:"Şampiyonlar Ligi",en:"Champions League",flag:"🏆",coef:1.15},{id:"uefa.europa",n:"Avrupa Ligi",en:"Europa League",flag:"🥈",coef:1.05},{id:"uefa.europa.conf",n:"Konferans Ligi",en:"Conference League",flag:"🥉",coef:0.98},
+  {id:"ned.1",n:"Eredivisie",flag:"🇳🇱",coef:1.0},{id:"por.1",n:"Portekiz",en:"Portugal",flag:"🇵🇹",coef:1.0},{id:"bel.1",n:"Belçika",en:"Belgium",flag:"🇧🇪",coef:0.97},{id:"sco.1",n:"İskoçya",en:"Scotland",flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",coef:0.95},
+  {id:"bra.1",n:"Brezilya",en:"Brazil",flag:"🇧🇷",coef:1.0},{id:"arg.1",n:"Arjantin",en:"Argentina",flag:"🇦🇷",coef:0.98},{id:"usa.1",n:"MLS",flag:"🇺🇸",coef:0.95},{id:"mex.1",n:"Meksika",en:"Mexico",flag:"🇲🇽",coef:0.95},
 ];
 const API=id=>`https://site.api.espn.com/apis/v2/sports/soccer/${id}/standings`;
 const cache=JSON.parse(localStorage.getItem("logoderbisi_teams")||"{}");
@@ -233,25 +238,73 @@ function loadLogo(team){
 
 /* ---------- ARAYÜZ ---------- */
 const $=id=>document.getElementById(id);
+/* ---------- DİL (Türkçe / English): arayüz ve videodaki yazılar ---------- */
+const I18N={
+  tr:{tagline:"İki kulüp logosu sahada seker, rakibin kalesine giren gol atar. 90 dakika, dikey video, Reels'e hazır.",loading:"yükleniyor",league:"Lig",matchup:"Eşleşme",random:"Rastgele",upload:"Logo yükle",
+    logoNote:"Logolar bu ortamda dışarıdan yüklenemedi — armalar takım renkleriyle çizildi. İstersen her takım için kendi logo dosyanı yükle.",
+    length:"Süre",tempo:"Tempo",calm:"Sakin",crazy:"Çılgın",titleL:"Üst başlık",handleL:"Kullanıcı adı",ctaL:"Alt yazı",sound:"Ses",on:"Açık",off:"Kapalı",
+    score:"Skor",physics:"Fizik",pick:"Ben seçerim",result:"Maç sonucu (ev – deplasman)",make:"Videoyu üret",preview:"Önizle",rec:"KAYIT",stop:"Durdur",
+    ready:"Video hazır",toIg:"Instagram'a gönder",download:"İndir",share:"Paylaş",shareDots:"Paylaş…",copy:"Bağlantıyı kopyala",again:"Yeni maç",
+    footer:"Takım verileri ve armalar: ESPN herkese açık API · 1080×1920 dikey · Reels ve Story ölçüsü",
+    defTitle:"DERBİ",defCta:"Sence kim kazanır? Yoruma yaz 👇",teams:"takım",live:"canlı ESPN verisi",backup:"yedek kadro verisi",noData:"veri gelmedi, başka lig dene",
+    stats:t=>`${t.rank}. sıra · ${t.pts} puan<br>HÜC ${t.att} · SAV ${t.def}`,crest:"arması",
+    saved:"Video kaydedildi. Galeriden Instagram'a yükleyebilirsin.",saveFail:"Kaydedilemedi: ",saveDenied:"bu ortam indirmeye izin vermedi",
+    noteShare:"Gönder'e bas, listeden Instagram'ı seç; Reels ya da Story olarak yükle.",
+    noteWebm:"Bu tarayıcı WEBM üretti; Instagram MP4 ister. Videoyu indirip dönüştür ya da iPhone Safari / Android Chrome'dan üret, orada doğrudan paylaşabilirsin.",
+    noteDl:"İndir'e bas, galeriye kaydet, Instagram'dan yükle.",linkOnly:"video dosyası bu ekrandan gönderilemiyor, bağlantı paylaşılır",
+    shareText:(hs,h)=>`${hs} ⚽ Logo Derbisi'nde maç bitti!${h} Sen de kendi derbini oynat:`,copied:"Kopyalandı ✓",copyManual:"Aşağıdan seçip kopyala",
+    goal:"GOOOL!",half2:"2. YARI",save:"KURTARIŞ",kick:"BAŞLIYOR",ft:"MAÇ SONU",wins:" KAZANDI",draw:"BERABERE",ftShort:"MS"},
+  en:{tagline:"Two club crests bounce around the pitch; get into the rival's net to score. 90 minutes, vertical video, ready for Reels.",loading:"loading",league:"League",matchup:"Matchup",random:"Random",upload:"Upload logo",
+    logoNote:"Logos couldn't be loaded here, so crests are drawn in team colours. You can upload your own logo file for each team.",
+    length:"Length",tempo:"Tempo",calm:"Calm",crazy:"Crazy",titleL:"Top title",handleL:"Username",ctaL:"Caption",sound:"Sound",on:"On",off:"Off",
+    score:"Score",physics:"Physics",pick:"I'll pick",result:"Final score (home – away)",make:"Make video",preview:"Preview",rec:"REC",stop:"Stop",
+    ready:"Video ready",toIg:"Send to Instagram",download:"Download",share:"Share",shareDots:"Share…",copy:"Copy link",again:"New match",
+    footer:"Team data and crests: ESPN public API · 1080×1920 vertical · Reels and Story size",
+    defTitle:"DERBY",defCta:"Who wins? Tell us in the comments 👇",teams:"teams",live:"live ESPN data",backup:"backup squad data",noData:"no data, try another league",
+    stats:t=>`#${t.rank} · ${t.pts} pts<br>ATT ${t.att} · DEF ${t.def}`,crest:"crest",
+    saved:"Video saved. Upload it to Instagram from your gallery.",saveFail:"Couldn't save: ",saveDenied:"this page isn't allowed to download",
+    noteShare:"Tap Send, pick Instagram from the list and post it as a Reel or Story.",
+    noteWebm:"This browser made a WEBM file; Instagram needs MP4. Download and convert it, or make the video in iPhone Safari / Android Chrome and share it directly from there.",
+    noteDl:"Tap Download, save it to your gallery and post it from Instagram.",linkOnly:"the video file can't be sent from here, the link is shared instead",
+    shareText:(hs,h)=>`${hs} ⚽ Full time in Logo Derby!${h} Play your own derby:`,copied:"Copied ✓",copyManual:"Select and copy below",
+    goal:"GOAL!",half2:"2ND HALF",save:"SAVE!",kick:"KICK OFF",ft:"FULL TIME",wins:" WINS",draw:"DRAW",ftShort:"FT"}};
+let lang="tr"; try{ lang=localStorage.getItem("ld-lang")||(/^tr/i.test(navigator.language||"tr")?"tr":"en"); }catch{}
+if(!I18N[lang]) lang="tr";
+const T=k=>I18N[lang][k];
+const lgName=l=>lang==="en"&&l.en||l.n;
+const up=s=>s.toLocaleUpperCase(lang);
+let srcState=null;
+function paintSrc(){ if(!srcState) return; $("src").className="status "+(srcState.ok?"ok":"err");
+  $("src").textContent=srcState.ok?`${srcState.n} ${T("teams")} · ${T(srcState.live?"live":"backup")}`:T("noData"); }
+function applyLang(prev){
+  document.documentElement.lang=lang;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent=T(el.dataset.i18n); });
+  $("langSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.v===lang));
+  /* kullanıcı değiştirmediyse varsayılan başlık ve alt yazı da dile geçer */
+  [["title","defTitle"],["cta","defCta"]].forEach(([id,k])=>{ if(!prev||$(id).value===I18N[prev][k]) $(id).value=T(k); });
+  if($("leaguebar").children.length) renderLeagueBar();
+  paintSrc(); if(home&&away) updateTeams();
+}
+
 let league=LEAGUES[0],teams=[],home,away,duration=30,tempo=17,fixScore=false;
-function renderLeagueBar(){ $("leaguebar").innerHTML=LEAGUES.map(l=>`<button type="button" data-id="${l.id}" class="${l===league?"active":""}">${l.flag} ${l.n}</button>`).join("");
+function renderLeagueBar(){ $("leaguebar").innerHTML=LEAGUES.map(l=>`<button type="button" data-id="${l.id}" class="${l===league?"active":""}">${l.flag} ${lgName(l)}</button>`).join("");
   $("leaguebar").querySelectorAll("button").forEach(b=>b.onclick=()=>{ league=LEAGUES.find(l=>l.id===b.dataset.id); renderLeagueBar(); selectLeague(); }); }
 async function selectLeague(){
-  $("src").className="status"; $("src").innerHTML=`<span class="spin"></span> ${league.n}`; $("recBtn").disabled=$("playBtn").disabled=true;
-  try{ teams=await loadLeague(league); await loadPack(league.id); $("src").className="status ok"; $("src").textContent=`${teams.length} takım · ${dataSource==="canlı"?"canlı ESPN verisi":"yedek kadro verisi"}`; }
-  catch(e){ teams=[]; $("src").className="status err"; $("src").textContent="veri gelmedi, başka lig dene"; }
+  srcState=null; $("src").className="status"; $("src").innerHTML=`<span class="spin"></span> ${lgName(league)}`; $("recBtn").disabled=$("playBtn").disabled=true;
+  try{ teams=await loadLeague(league); await loadPack(league.id); srcState={ok:true,n:teams.length,live:dataSource==="canlı"}; paintSrc(); }
+  catch(e){ teams=[]; srcState={ok:false}; paintSrc(); }
   if(!teams.length) return;
   [$("homeSel"),$("awaySel")].forEach(sel=>sel.innerHTML=teams.map((t,i)=>`<option value="${i}">${t.n}</option>`).join(""));
   $("homeSel").value=0; $("awaySel").value=Math.min(1,teams.length-1); updateTeams(); $("recBtn").disabled=$("playBtn").disabled=false;
 }
 function paintCrest(el,t){ const src=logoSrc(t);
-  el.innerHTML=src?`<img src="${src}" alt="${t.n} arması">`:""; if(!src) el.textContent=t.s;
+  el.innerHTML=src?`<img src="${src}" alt="${t.n} ${T("crest")}">`:""; if(!src) el.textContent=t.s;
   const im=el.querySelector("img"); if(im) im.onerror=()=>{ el.textContent=t.s; el.style.background=t.c; el.style.color="#fff"; };
   if(src){ el.style.background="#fff"; el.style.color="#0b1a07"; } }
 function updateTeams(){ home=teams[$("homeSel").value]; away=teams[$("awaySel").value];
   if(home===away){ $("awaySel").value=(+$("awaySel").value+1)%teams.length; away=teams[$("awaySel").value]; }
   paintCrest($("homeCrest"),home); paintCrest($("awayCrest"),away);
-  const str=t=>`${t.rank}. sıra · ${t.pts} puan<br>HÜC ${t.att} · SAV ${t.def}`; $("homeStr").innerHTML=str(home); $("awayStr").innerHTML=str(away); }
+  const str=T("stats"); $("homeStr").innerHTML=str(home); $("awayStr").innerHTML=str(away); }
 $("homeSel").onchange=$("awaySel").onchange=updateTeams;
 $("rndBtn").onclick=()=>{ if(!teams.length) return; const a=Math.floor(Math.random()*teams.length); let b=Math.floor(Math.random()*(teams.length-1)); if(b>=a) b++; $("homeSel").value=a; $("awaySel").value=b; updateTeams(); };
 [["homeFile",()=>home],["awayFile",()=>away]].forEach(([id,get])=>{ $(id).onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(!f) return;
@@ -259,6 +312,8 @@ $("rndBtn").onclick=()=>{ if(!teams.length) return; const a=Math.floor(Math.rand
 $("durSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ duration=+b.dataset.v; $("durSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); });
 $("sndSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ sound=b.dataset.v==="1";
   $("sndSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); if(sound) audioOn(); else audioOff(); });
+$("langSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ const prev=lang; lang=b.dataset.v; try{ localStorage.setItem("ld-lang",lang); }catch{} applyLang(prev); });
+applyLang();
 $("tmpSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ tempo=+b.dataset.v; $("tmpSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); });
 $("scoreSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ fixScore=b.dataset.v==="1";
   $("scoreSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); $("scorePick").classList.toggle("hidden",!fixScore); });
@@ -341,7 +396,7 @@ async function run(record){
   const [hImg,aImg]=await Promise.all([loadLogo(home),loadLogo(away)]);
   if(document.fonts&&document.fonts.ready){ try{ await document.fonts.ready }catch{} }
   game={t0:performance.now(),last:performance.now(),min:0,sh:0,sa:0,record,hImg,aImg,vmax:tempo*(30/duration),ksp:CFG.KSP*(tempo/17)*(30/duration),
-    title:($("title").value||"DERBİ").toUpperCase(),handle:$("handle").value,cta:$("cta").value,
+    title:up($("title").value||T("defTitle")),handle:$("handle").value,cta:$("cta").value,
     msPerMin:(duration*1000-LEAD-TAIL)/90,flash:null,parts:[],shake:0,celeb:0,ftAt:0,done:false,
     saveFx:null,plan:makePlan(),log:[],
     discs:[{team:"h",t:home,img:hImg,attack:-1,x:0,y:0,vx:0,vy:0,trail:[],rot:0,sq:0,sqa:0,r:R},
@@ -466,13 +521,11 @@ function showOutput(blob,mime){
   $("dlBtn").onclick=async e=>{
     if(!dlCap) return;
     e.preventDefault();
-    try{ await dlCap.save({filename:file.name,data:blob}); $("outNote").textContent="Video kaydedildi. Galeriden Instagram'a yükleyebilirsin."; }
-    catch(err){ if(err&&err.code==="declined") return; $("outNote").textContent="Kaydedilemedi: "+((err&&err.message)||"bu ortam indirmeye izin vermedi"); }
+    try{ await dlCap.save({filename:file.name,data:blob}); $("outNote").textContent=T("saved"); }
+    catch(err){ if(err&&err.code==="declined") return; $("outNote").textContent=T("saveFail")+((err&&err.message)||T("saveDenied")); }
   };
   setupShare(canShare);
-  $("outNote").textContent= canShare ? "Gönder'e bas, listeden Instagram'ı seç; Reels ya da Story olarak yükle."
-    : ext==="webm" ? "Bu tarayıcı WEBM üretti; Instagram MP4 ister. Videoyu indirip dönüştür ya da iPhone Safari / Android Chrome'dan üret, orada doğrudan paylaşabilirsin."
-    : "İndir'e bas, galeriye kaydet, Instagram'dan yükle.";
+  $("outNote").textContent= canShare ? T("noteShare") : ext==="webm" ? T("noteWebm") : T("noteDl");
   ["stage","stageBtns"].forEach(i=>$(i).classList.add("hidden")); $("out").classList.remove("hidden"); $("out").scrollIntoView({behavior:"smooth",block:"start"});
 }
 
@@ -482,7 +535,7 @@ const ARTIFACT_URL="https://claude.ai/artifact/8uMM271FUxVBaVRUZEZT42";
 function shareUrl(){ return (!window.claude&&/^https?:/.test(location.protocol))? location.href.split(/[?#]/)[0] : ARTIFACT_URL; }
 function setupShare(fileShare){
   const url=shareUrl(), h=$("handle").value.trim();
-  const text=`${home.n} ${game.sh}-${game.sa} ${away.n} ⚽ Logo Derbisi'nde maç bitti!${h?" "+h:""} Sen de kendi derbini oynat:`;
+  const text=T("shareText")(`${home.n} ${game.sh}-${game.sa} ${away.n}`,h?" "+h:"");
   const full=`${text} ${url}`;
   $("shWa").href="https://wa.me/?text="+encodeURIComponent(full);
   $("shX").href="https://twitter.com/intent/tweet?text="+encodeURIComponent(text)+"&url="+encodeURIComponent(url);
@@ -491,15 +544,15 @@ function setupShare(fileShare){
   $("shNative").classList.toggle("hidden",!canLink);
   $("shNative").onclick=()=>navigator.share({title:"Logo Derbisi",text,url}).catch(()=>{});
   $("shText").value=full; $("shText").classList.add("hidden");
-  $("shareStatus").textContent=fileShare?"":"video dosyası bu ekrandan gönderilemiyor, bağlantı paylaşılır";
+  $("shareStatus").textContent=fileShare?"":T("linkOnly");
   $("shCopy").onclick=async()=>{
     let ok=false;
     try{ if(navigator.clipboard&&navigator.clipboard.writeText){ await navigator.clipboard.writeText(full); ok=true; } }catch{}
     if(!ok){ const t=$("shText"); t.classList.remove("hidden"); t.focus(); t.select();
       try{ ok=document.execCommand("copy"); }catch{ ok=false; } }
-    $("shCopy").textContent= ok?"Kopyalandı ✓":"Aşağıdan seçip kopyala";
+    $("shCopy").textContent= ok?T("copied"):T("copyManual");
     if(ok) $("shText").classList.add("hidden");
-    setTimeout(()=>{ $("shCopy").textContent="Bağlantıyı kopyala"; },2200);
+    setTimeout(()=>{ $("shCopy").textContent=T("copy"); },2200);
   };
 }
 
@@ -509,7 +562,7 @@ function loop(now){
   if(matchMs>0 && !game.kickW){ game.kickW=1; whistle(0,0.45); }
   if(matchMs>0 && !game.ftAt){
     const target=Math.min(90,Math.floor(matchMs/game.msPerMin)+1);
-    while(game.min<target){ game.min++; if(game.min===46&&!game.celeb) game.flash={text:"2. YARI",sub:"",t:now,dur:1300,big:false,col:"#b6ff3b"}; }
+    while(game.min<target){ game.min++; if(game.min===46&&!game.celeb) game.flash={text:T("half2"),sub:"",t:now,dur:1300,big:false,col:"#b6ff3b"}; }
     /* seçili skora ulaşılmadıysa uzatma: düdük son gol ve sevinçten sonra */
     if(game.min>=90&&!game.ftAt&&planDone()&&(!game.plan||!game.celeb)){ game.ftAt=now; game.flash=null; game.celeb=0; whistle(0,0.25); whistle(0.32,0.25); whistle(0.64,0.8); }
   }
@@ -566,7 +619,7 @@ function score(d,now){
   if(g.plan) g.plan.i++; g.log.push(d.team+(g.min||1));
   d.y=d.attack<0?TOPL-40:BOTL+40; d.vx=d.vy=0; d.inNet=true;
   g.celeb=g.celebMs; g.shake=26; roar();
-  g.flash={text:"GOOOL!",sub:`${d.t.n} · ${game.min||1}'`,t:now,dur:g.celebMs,big:true,col:d.t.col||d.t.c};
+  g.flash={text:T("goal"),sub:`${d.t.n} · ${game.min||1}'`,t:now,dur:g.celebMs,big:true,col:d.t.col||d.t.c};
   for(let i=0;i<90;i++){ const a=Math.random()*Math.PI*2, s=4+Math.random()*16;
     g.parts.push({x:d.x,y:d.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-6,life:40+Math.random()*50,col:Math.random()<0.5?(d.t.col||d.t.c):"#b6ff3b",sz:5+Math.random()*9}); }
 }
@@ -600,7 +653,7 @@ function banner(){
   crest(game.hImg,home,b.x+118,cy,72); crest(game.aImg,away,b.x+b.w-118,cy,72);
   ctx.textAlign="center"; ctx.fillStyle="#fff"; ctx.font=`118px ${DF}`;
   ctx.fillText(String(game.sh),b.x+322,cy+42); ctx.fillText(String(game.sa),b.x+b.w-322,cy+42);
-  ctx.fillStyle="#b6ff3b"; ctx.font=`600 30px ${UF}`; ctx.fillText(league.n.toUpperCase(),W/2,cy-6);
+  ctx.fillStyle="#b6ff3b"; ctx.font=`600 30px ${UF}`; ctx.fillText(up(lgName(league)),W/2,cy-6);
   ctx.fillStyle="#7fa891"; ctx.font=`600 25px ${UF}`; ctx.fillText(game.title,W/2,cy+34);
 
   const names=[[home.n.toUpperCase(),b.x+38,"left"],[away.n.toUpperCase(),b.x+b.w-38,"right"]];
@@ -609,7 +662,7 @@ function banner(){
   ctx.textAlign="center";
   ctx.beginPath(); ctx.moveTo(W/2-118,b.y+b.h-6); ctx.lineTo(W/2+118,b.y+b.h-6); ctx.lineTo(W/2+92,b.y+b.h+54); ctx.lineTo(W/2-92,b.y+b.h+54); ctx.closePath();
   ctx.fillStyle="#b6ff3b"; ctx.fill();
-  ctx.fillStyle="#0b1a07"; ctx.font=`44px ${DF}`; ctx.fillText(game.ftAt?"MS":game.min>=90?"90+'":(game.min||1)+"'",W/2,b.y+b.h+42);
+  ctx.fillStyle="#0b1a07"; ctx.font=`44px ${DF}`; ctx.fillText(game.ftAt?T("ftShort"):game.min>=90?"90+'":(game.min||1)+"'",W/2,b.y+b.h+42);
 }
 function pitch(now){
   ctx.save(); rr(P.x,P.y,P.w,P.h,20); ctx.clip();
@@ -645,7 +698,7 @@ function pitch(now){
   const sv=game.saveFx;
   if(sv&&performance.now()-sv.t<750){ const p=(performance.now()-sv.t)/750;
     ctx.save(); ctx.globalAlpha=1-p; ctx.textAlign="center"; ctx.lineWidth=9; ctx.strokeStyle="#070d08"; ctx.fillStyle="#fff";
-    ctx.font=`${62+p*22}px ${DF}`; ctx.strokeText("KURTARIŞ",sv.x,sv.y); ctx.fillText("KURTARIŞ",sv.x,sv.y); ctx.restore(); }
+    ctx.font=`${62+p*22}px ${DF}`; ctx.strokeText(T("save"),sv.x,sv.y); ctx.fillText(T("save"),sv.x,sv.y); ctx.restore(); }
   ctx.textAlign="center"; ctx.fillStyle="rgba(255,255,255,.22)"; ctx.font=`86px ${DF}`;
   ctx.fillText(game.handle.replace("@","").toUpperCase(),W/2,P.y+P.h/2-170);
   // izler + diskler
@@ -687,13 +740,13 @@ function draw(now,el){
     ctx.restore();
   }
   if(el<LEAD){ ctx.save(); ctx.globalAlpha=1-el/LEAD; ctx.textAlign="center"; ctx.lineWidth=12; ctx.strokeStyle="#070d08"; ctx.fillStyle="#b6ff3b";
-    ctx.font=`132px ${DF}`; ctx.strokeText("BAŞLIYOR",W/2,P.y+P.h/2); ctx.fillText("BAŞLIYOR",W/2,P.y+P.h/2); ctx.restore(); }
+    ctx.font=`132px ${DF}`; ctx.strokeText(T("kick"),W/2,P.y+P.h/2); ctx.fillText(T("kick"),W/2,P.y+P.h/2); ctx.restore(); }
   if(game.ftAt){
     const p=Math.min(1,(now-game.ftAt)/450); ctx.save(); ctx.globalAlpha=p*0.93; ctx.fillStyle="#070d08"; ctx.fillRect(P.x,P.y,P.w,P.h); ctx.globalAlpha=p; ctx.textAlign="center";
-    ctx.fillStyle="#b6ff3b"; ctx.font=`96px ${DF}`; ctx.fillText("MAÇ SONU",W/2,P.y+P.h/2-210);
+    ctx.fillStyle="#b6ff3b"; ctx.font=`96px ${DF}`; ctx.fillText(T("ft"),W/2,P.y+P.h/2-210);
     crest(game.hImg,home,W/2-290,P.y+P.h/2-40,96); crest(game.aImg,away,W/2+290,P.y+P.h/2-40,96);
     ctx.fillStyle="#fff"; ctx.font=`190px ${DF}`; ctx.fillText(`${game.sh}-${game.sa}`,W/2,P.y+P.h/2+28);
-    const win=game.sh>game.sa?home.n.toUpperCase()+" KAZANDI":game.sa>game.sh?away.n.toUpperCase()+" KAZANDI":"BERABERE";
+    const win=game.sh>game.sa?up(home.n)+T("wins"):game.sa>game.sh?up(away.n)+T("wins"):T("draw");
     const fs=fit(win,900,58,DF); ctx.font=`${fs}px ${DF}`; ctx.fillStyle="#b6ff3b"; ctx.fillText(win,W/2,P.y+P.h/2+170);
     ctx.fillStyle="#7fa891"; ctx.font=`600 42px ${UF}`; ctx.fillText(game.cta,W/2,P.y+P.h/2+250); ctx.restore();
   }
